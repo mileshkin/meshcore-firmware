@@ -5,6 +5,9 @@
 #include <helpers/ESP32Board.h>
 #include <driver/rtc_io.h>
 
+#define  ADC_DIVIDER_FACTOR     5.46   // Voltage divider factor for battery voltage measurement
+#define  ADC_VREF_VOLTS         3.3    // ADC reference voltage
+
 class HeltecV4Board : public ESP32Board {
 
 public:
