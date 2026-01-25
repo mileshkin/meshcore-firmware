@@ -73,9 +73,9 @@ struct NeighbourInfo {
 
 #ifndef FIRMWARE_VERSION
   #ifdef HELTEC_LORA_V4
-    #define FIRMWARE_VERSION   "v1.11.0.3-RU-RXFIX"
+    #define FIRMWARE_VERSION   "v1.11.0.5-RU-RXFIX"
   #else
-    #define FIRMWARE_VERSION   "v1.11.0.3-RU"
+    #define FIRMWARE_VERSION   "v1.11.0.5-RU"
   #endif
 #endif
 

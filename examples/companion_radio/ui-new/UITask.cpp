@@ -109,7 +109,7 @@ class HomeScreen : public UIScreen {
 
   void renderBatteryIndicator(DisplayDriver& display, uint16_t batteryMilliVolts) {
     // Convert millivolts to percentage
-    const int minMilliVolts = 3000; // Minimum voltage (e.g., 3.0V)
+    const int minMilliVolts = 3300; // Minimum voltage (e.g., 3.1V)
     const int maxMilliVolts = 4200; // Maximum voltage (e.g., 4.2V)
     int batteryPercentage = ((batteryMilliVolts - minMilliVolts) * 100) / (maxMilliVolts - minMilliVolts);
     if (batteryPercentage < 0) batteryPercentage = 0; // Clamp to 0%
@@ -117,20 +117,17 @@ class HomeScreen : public UIScreen {
 
     // battery icon
     int iconWidth = 24;
-    int iconHeight = 10;
-    int iconX = display.width() - iconWidth - 5; // Position the icon near the top-right corner
+    int iconHeight = 8;
+    int iconX = display.width() - iconWidth - 2; // Position the icon near the top-right corner
     int iconY = 0;
     display.setColor(DisplayDriver::GREEN);
 
     // battery outline
-    display.drawRect(iconX, iconY, iconWidth, iconHeight);
-
-    // battery "cap"
-    display.fillRect(iconX + iconWidth, iconY + (iconHeight / 4), 3, iconHeight / 2);
+    display.drawXbm(iconX, iconY, batt_outline, iconWidth, iconHeight);
 
     // fill the battery based on the percentage
-    int fillWidth = (batteryPercentage * (iconWidth - 4)) / 100;
-    display.fillRect(iconX + 2, iconY + 2, fillWidth, iconHeight - 4);
+    int fillWidth = (batteryPercentage * (iconWidth - 2)) / 100;
+    display.fillRect(iconX + 1, iconY + 1, fillWidth, iconHeight - 2);
   }
 
   CayenneLPP sensors_lpp;
@@ -260,7 +257,7 @@ public:
       sprintf(tmp, "TX: %ddBm", _node_prefs->tx_power_dbm);
       display.print(tmp);
       display.setCursor(0, 53);
-      sprintf(tmp, "Noise floor: %d", radio_driver.getNoiseFloor());
+      sprintf(tmp, "Noise floor: %ddB", radio_driver.getNoiseFloor());
       display.print(tmp);
     } else if (_page == HomePage::BLUETOOTH) {
       display.setColor(DisplayDriver::GREEN);

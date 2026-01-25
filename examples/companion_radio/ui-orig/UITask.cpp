@@ -149,7 +149,7 @@ void UITask::newMsg(uint8_t path_len, const char* from_name, const char* text, i
 
 void UITask::renderBatteryIndicator(uint16_t batteryMilliVolts) {
   // Convert millivolts to percentage
-  const int minMilliVolts = 3000; // Minimum voltage (e.g., 3.0V)
+  const int minMilliVolts = 3300; // Minimum voltage (e.g., 3.0V)
   const int maxMilliVolts = 4200; // Maximum voltage (e.g., 4.2V)
   int batteryPercentage = ((batteryMilliVolts - minMilliVolts) * 100) / (maxMilliVolts - minMilliVolts);
   if (batteryPercentage < 0) batteryPercentage = 0; // Clamp to 0%

@@ -25,7 +25,7 @@ unsigned long nextSleepinSecs = 120; // next sleep in seconds. The first sleep (
 
 void setup() {
   Serial.begin(115200);
-  delay(1000);
+  delay(100);
 
   board.begin();
 
@@ -84,7 +84,7 @@ void setup() {
   the_mesh.begin(fs);
 
 #ifdef DISPLAY_CLASS
-  ui_task.begin(the_mesh.getNodePrefs(), FIRMWARE_BUILD_DATE, FIRMWARE_VERSION);
+  ui_task.begin(the_mesh.getNodePrefs(), FIRMWARE_BUILD_DATE, FIRMWARE_VERSION, the_mesh.getRTCClock(), &board);
 #endif
 
   // send out initial Advertisement to the mesh
