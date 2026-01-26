@@ -21,7 +21,7 @@ uint16_t _battery_mv = 0;
 int batteryPercentage = 0;
 uint32_t _next_batt_read = 0;
 
-const int minMilliVolts = 3300; // Minimum voltage (e.g., 3.1V)
+const int minMilliVolts = 3300; // Minimum voltage (e.g., 3.3V)
 const int maxMilliVolts = 4200; // Maximum voltage (e.g., 4.2V)
 
 void UITask::begin(NodePrefs* node_prefs, const char* build_date, const char* firmware_version, mesh::RTCClock* rtc, mesh::MainBoard* board) {
@@ -39,9 +39,6 @@ void UITask::begin(NodePrefs* node_prefs, const char* build_date, const char* fi
   if(dash){
     *dash = 0;
   }
-
- 
-
   sprintf(_version_info, "%s", version);
 }
 
@@ -95,16 +92,10 @@ void UITask::renderCurrScreen() {
     _display->drawTextCentered(_display->width()/2, 53, tmp);
 
     // battery math
-    _battery_mv = board.getBattMilliVolts();
-    batteryPercentage = ((_battery_mv - minMilliVolts) * 100) / (maxMilliVolts - minMilliVolts);
+    _battery_mv = (float)_board->getBattMilliVolts();
+    batteryPercentage = (int)(((_battery_mv - minMilliVolts) * 100) / (maxMilliVolts - minMilliVolts));
           if (batteryPercentage < 0) batteryPercentage = 0; // Clamp to 0%
           if (batteryPercentage > 100) batteryPercentage = 100; // Clamp to 100%
-
-/*
-    // battery readings
-    sprintf(tmp, "Bat: %.2fV (%d%%)", _battery_mv / 1000.0f, batteryPercentage);
-    _display->drawTextCentered(_display->width()/2, 54, tmp);
-*/  
 
     // battery icon
     int iconWidth = 24;
@@ -119,6 +110,11 @@ void UITask::renderCurrScreen() {
     // fill the battery based on the percentage
     int fillWidth = (batteryPercentage * (iconWidth - 2)) / 100;
     display.fillRect(iconX + 1, iconY + 1, fillWidth, iconHeight - 2);
+
+    // battery readings
+    //sprintf(tmp, "Bat: %.2fV (%d%%),(%d)", _battery_mv / 1000.0f, batteryPercentage, fillWidth);
+    //_display->drawTextCentered(_display->width()/2, 53, tmp);
+    
   }
 }
 

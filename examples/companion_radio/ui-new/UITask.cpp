@@ -109,7 +109,7 @@ class HomeScreen : public UIScreen {
 
   void renderBatteryIndicator(DisplayDriver& display, uint16_t batteryMilliVolts) {
     // Convert millivolts to percentage
-    const int minMilliVolts = 3300; // Minimum voltage (e.g., 3.1V)
+    const int minMilliVolts = 3300; // Minimum voltage (e.g., 3.3V)
     const int maxMilliVolts = 4200; // Maximum voltage (e.g., 4.2V)
     int batteryPercentage = ((batteryMilliVolts - minMilliVolts) * 100) / (maxMilliVolts - minMilliVolts);
     if (batteryPercentage < 0) batteryPercentage = 0; // Clamp to 0%
@@ -117,7 +117,7 @@ class HomeScreen : public UIScreen {
 
     // battery icon
     int iconWidth = 24;
-    int iconHeight = 8;
+    int iconHeight = 7;
     int iconX = display.width() - iconWidth - 2; // Position the icon near the top-right corner
     int iconY = 0;
     display.setColor(DisplayDriver::GREEN);
