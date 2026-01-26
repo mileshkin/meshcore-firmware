@@ -226,7 +226,7 @@ int MyMesh::handleRequest(ClientInfo *sender, uint32_t sender_timestamp, uint8_t
     stats.n_direct_dups = ((SimpleMeshTables *)getTables())->getNumDirectDups();
     stats.n_flood_dups = ((SimpleMeshTables *)getTables())->getNumFloodDups();
     stats.total_rx_air_time_secs = getReceiveAirTime() / 1000;
-
+    stats.n_recv_errors = radio_driver.getPacketsRecvErrors();
     memcpy(&reply_data[4], &stats, sizeof(stats));
 
     return 4 + sizeof(stats); //  reply_len
@@ -854,10 +854,14 @@ bool MyMesh::formatFileSystem() {
 #endif
 }
 
-void MyMesh::sendSelfAdvertisement(int delay_millis) {
+void MyMesh::sendSelfAdvertisement(int delay_millis, bool flood) {
   mesh::Packet *pkt = createSelfAdvert();
   if (pkt) {
-    sendFlood(pkt, delay_millis);
+    if (flood) {
+      sendFlood(pkt, delay_millis);
+    } else {
+      sendZeroHop(pkt, delay_millis);
+    }
   } else {
     MESH_DEBUG_PRINTLN("ERROR: unable to create advertisement packet!");
   }
