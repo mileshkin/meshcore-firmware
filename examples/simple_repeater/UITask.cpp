@@ -33,7 +33,7 @@ void UITask::begin(NodePrefs* node_prefs, const char* build_date, const char* fi
   _press_start = 0;
   _display->turnOn();
   
-   // v1.11.0.5-RU-RXFIX -> v1.11.0.5
+   // v1.12.0.0-RU-RXFIX -> v1.12.0.0
   char *version = strdup(firmware_version);
   char *dash = strchr(version, '-');
   if(dash){

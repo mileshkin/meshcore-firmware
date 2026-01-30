@@ -175,9 +175,9 @@ public:
     display.setColor(DisplayDriver::GREEN);
     char filtered_name[sizeof(_node_prefs->node_name)];
     display.translateUTF8ToBlocks(filtered_name, _node_prefs->node_name, sizeof(filtered_name));
-    display.setCursor(0, 0);
-    display.print(filtered_name);
-
+    int iconWidth = 24; // Must match iconWidth in renderBatteryIndicator
+    int max_name_width = display.width() - iconWidth - 4;
+    display.drawTextEllipsized(2, 0, max_name_width, filtered_name);
     // battery voltage
     renderBatteryIndicator(display, _task->getBattMilliVolts());
 
@@ -195,7 +195,7 @@ public:
     if (_page == HomePage::FIRST) {
       display.setColor(DisplayDriver::YELLOW);
       display.setTextSize(2);
-      sprintf(tmp, "MSG: %d", _task->getMsgCount());
+      sprintf(tmp, "MSG:%d", _task->getMsgCount());
       display.drawTextCentered(display.width() / 2, 20, tmp);
 
       #ifdef WIFI_SSID

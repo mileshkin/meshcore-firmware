@@ -5,7 +5,7 @@
 #include <helpers/ESP32Board.h>
 #include <driver/rtc_io.h>
 
-#define  ADC_DIVIDER_FACTOR     5.46   // Voltage divider factor for battery voltage measurement
+#define  ADC_MULTIPLIER         5.46   // Voltage divider factor for battery voltage measurement
 #define  ADC_VREF_VOLTS         3.3    // ADC reference voltage
 
 class HeltecV4Board : public ESP32Board {
@@ -22,5 +22,21 @@ public:
   void powerOff() override;
   uint16_t getBattMilliVolts() override;
   const char* getManufacturerName() const override ;
-
+  float adc_mult = ADC_MULTIPLIER;
+  
+  bool setAdcMultiplier(float multiplier) override {
+    if (multiplier == 0.0f) {
+      adc_mult = ADC_MULTIPLIER;}
+    else {
+      adc_mult = multiplier;
+    }
+    return true;
+  }
+  float getAdcMultiplier() const override {
+    if (adc_mult == 0.0f) {
+      return ADC_MULTIPLIER;
+    } else {
+      return adc_mult;
+    }
+  }
 };

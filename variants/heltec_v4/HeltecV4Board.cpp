@@ -82,7 +82,7 @@ void HeltecV4Board::begin() {
 
     digitalWrite(PIN_ADC_CTRL, LOW);
 
-    return (ADC_DIVIDER_FACTOR * (ADC_VREF_VOLTS / 1024.0) * raw) * 1000;
+    return (ADC_MULTIPLIER * (ADC_VREF_VOLTS / 1024.0) * raw) * 1000;
   }
 
   const char* HeltecV4Board::getManufacturerName() const {

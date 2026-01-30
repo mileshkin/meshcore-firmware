@@ -11,7 +11,7 @@
 #ifndef PIN_ADC_CTRL              // set in platformio.ini for Heltec Wireless Tracker (2)
   #define  PIN_ADC_CTRL    37
 #endif
-#define  ADC_DIVIDER_FACTOR     5.25   // Voltage divider factor for battery voltage measurement
+#define  ADC_MULTIPLIER         5.25   // Voltage divider factor for battery voltage measurement
 #define  ADC_VREF_VOLTS         3.3    // ADC reference voltage
 #define  PIN_ADC_CTRL_ACTIVE    LOW
 #define  PIN_ADC_CTRL_INACTIVE  HIGH
@@ -24,6 +24,7 @@ private:
 
 public:
   RefCountedDigitalPin periph_power;
+  float adc_mult = ADC_MULTIPLIER;
 
   HeltecV3Board() : periph_power(PIN_VEXT_EN) { }
 
@@ -77,6 +78,22 @@ public:
   void powerOff() override {
     enterDeepSleep(0);
   }
+  
+  bool setAdcMultiplier(float multiplier) override {
+    if (multiplier == 0.0f) {
+      adc_mult = ADC_MULTIPLIER;}
+    else {
+      adc_mult = multiplier;
+    }
+    return true;
+  }
+  float getAdcMultiplier() const override {
+    if (adc_mult == 0.0f) {
+      return ADC_MULTIPLIER;
+    } else {
+      return adc_mult;
+    }
+  }
 
   uint16_t getBattMilliVolts() override {
     analogReadResolution(10);
@@ -90,7 +107,7 @@ public:
 
     digitalWrite(PIN_ADC_CTRL, !adc_active_state);
 
-    return (ADC_DIVIDER_FACTOR * (ADC_VREF_VOLTS / 1024.0) * raw) * 1000;
+    return (ADC_MULTIPLIER * (ADC_VREF_VOLTS / 1024.0) * raw) * 1000;
   }
 
   const char* getManufacturerName() const override {

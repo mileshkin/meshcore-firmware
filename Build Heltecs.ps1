@@ -14,3 +14,6 @@ foreach ($e in $envs) {
     Write-Host "=== Cleaning $e ==="
     C:\Users\MILESHKIN\.platformio\penv\Scripts\platformio.exe run -d $project --target clean --environment $e
 }
+
+#Convert HEX to UF2
+py bin\uf2conv\uf2conv.py .pio\build\Heltec_t114_companion_radio_ble\firmware.hex -c -o .pio\build\Heltec_t114_companion_radio_ble\firmware.uf2 -f 0xADA52840

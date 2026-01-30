@@ -8,6 +8,7 @@
 #define  PIN_VBAT_READ    4
 #define  PIN_BAT_CTL      6
 #define  MV_LSB   (3000.0F / 4096.0F) // 12-bit ADC with 3.0V input range
+#define  ADC_MULTIPLIER 4.9
 
 class T114Board : public NRF52BoardDCDC {
 protected:
@@ -16,6 +17,7 @@ protected:
 #endif
 
 public:
+  float adc_mult = ADC_MULTIPLIER;
   T114Board() : NRF52Board("T114_OTA") {}
   void begin();
 
@@ -27,6 +29,22 @@ public:
     digitalWrite(P_LORA_TX_LED, HIGH);   // turn TX LED off
   }
 #endif
+ 
+  bool setAdcMultiplier(float multiplier) override {
+    if (multiplier == 0.0f) {
+      adc_mult = ADC_MULTIPLIER;}
+    else {
+      adc_mult = multiplier;
+    }
+    return true;
+  }
+  float getAdcMultiplier() const override {
+    if (adc_mult == 0.0f) {
+      return ADC_MULTIPLIER;
+    } else {
+      return adc_mult;
+    }
+  }
 
   uint16_t getBattMilliVolts() override {
     int adcvalue = 0;
@@ -39,7 +57,7 @@ public:
     adcvalue = analogRead(PIN_VBAT_READ);
     digitalWrite(6, 0);
 
-    return (uint16_t)((float)adcvalue * MV_LSB * 4.9);
+    return (uint16_t)((float)adcvalue * MV_LSB * ADC_MULTIPLIER);
   }
 
   const char* getManufacturerName() const override {
