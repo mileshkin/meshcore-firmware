@@ -17,3 +17,4 @@ foreach ($e in $envs) {
 
 #Convert HEX to UF2
 py bin\uf2conv\uf2conv.py .pio\build\Heltec_t114_companion_radio_ble\firmware.hex -c -o .pio\build\Heltec_t114_companion_radio_ble\firmware.uf2 -f 0xADA52840
+py bin\uf2conv\uf2conv.py .pio\build\Heltec_t114_repeater\firmware.hex -c -o .pio\build\Heltec_t114_repeater\firmware.uf2 -f 0xADA52840

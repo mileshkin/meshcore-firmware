@@ -42,6 +42,19 @@ void UITask::begin(NodePrefs* node_prefs, const char* build_date, const char* fi
   sprintf(_version_info, "%s", version);
 }
 
+/*
+  hardware-agnostic pre-shutdown activity should be done here
+*/
+void UITask::shutdown(bool restart){
+  if (restart) {
+    _board->reboot();
+  } else {
+    _display->turnOff();
+    radio_driver.powerOff();
+    _board->powerOff();
+  }
+}
+
 void UITask::renderCurrScreen() {
   char tmp[80];
   if (millis() < BOOT_SCREEN_MILLIS) { // boot screen
@@ -156,4 +169,29 @@ void UITask::loop() {
       _display->turnOff();
     }
   }
+
+  #ifdef AUTO_SHUTDOWN_MILLIVOLTS
+  if (millis() > next_batt_chck) {
+    uint16_t milliVolts = _board->getBattMilliVolts();
+    if (milliVolts > 0 && milliVolts < AUTO_SHUTDOWN_MILLIVOLTS) {
+
+      // show low battery shutdown alert
+      // we should only do this for eink displays, which will persist after power loss
+      #if defined(THINKNODE_M1) || defined(LILYGO_TECHO)
+      if (_display != NULL) {
+        _display->startFrame();
+        _display->setTextSize(2);
+        _display->setColor(DisplayDriver::RED);
+        _display->drawTextCentered(_display->width() / 2, 20, "Low Battery.");
+        _display->drawTextCentered(_display->width() / 2, 40, "Shutting Down!");
+        _display->endFrame();
+      }
+      #endif
+
+      shutdown();
+
+    }
+    next_batt_chck = millis() + 8000;
+  }
+#endif
 }
