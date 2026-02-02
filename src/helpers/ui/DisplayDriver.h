@@ -19,6 +19,8 @@ public:
   virtual void clear() = 0;
   virtual void startFrame(Color bkg = DARK) = 0;
   virtual void setTextSize(int sz) = 0;
+  virtual void setContrast(int contrast) = 0;  // default implementation does nothing
+  virtual bool dim(bool dimmed) = 0;
   virtual void setColor(Color c) = 0;
   virtual void setCursor(int x, int y) = 0;
   virtual void print(const char* str) = 0;

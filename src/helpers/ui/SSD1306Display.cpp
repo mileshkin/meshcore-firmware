@@ -62,6 +62,16 @@ void SSD1306Display::setTextSize(int sz) {
 #endif
 }
 
+void SSD1306Display::setContrast(int contrast) {
+  display.ssd1306_command(SSD1306_SETCONTRAST);
+  display.ssd1306_command(contrast);
+}
+
+bool SSD1306Display::dim(bool dimmed) {
+  display.dim(dimmed);
+  return true;
+}
+
 void SSD1306Display::setColor(Color c) {
   _color = (c != 0) ? SSD1306_WHITE : SSD1306_BLACK;
   display.setTextColor(_color);
