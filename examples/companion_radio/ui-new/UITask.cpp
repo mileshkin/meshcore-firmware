@@ -7,17 +7,21 @@
 #endif
 
 #ifndef AUTO_OFF_MILLIS
-  #define AUTO_OFF_MILLIS     15000   // 15 seconds
+  #define AUTO_OFF_MILLIS    10000   // 10 seconds
 #endif
 #define BOOT_SCREEN_MILLIS   3000   // 3 seconds
+#define TIMEZONE_OFFSET      10800  // UTC+3 in seconds
+#define DISPLAY_CONTRAST     255
+#define SCREENSAVER_CONTRAST 0
 
-#ifdef PIN_STATUS_LED
-#define LED_ON_MILLIS     20
-#define LED_ON_MSG_MILLIS 200
-#define LED_CYCLE_MILLIS  4000
+#ifdef  PIN_STATUS_LED
+  #define LED_ON_MILLIS     20
+  #define LED_ON_MSG_MILLIS 200
+  #define LED_CYCLE_MILLIS  4000
 #endif
 
-#define LONG_PRESS_MILLIS   1200
+#define LONG_PRESS_MILLIS   5000
+#define HIBERNATE_CANCEL_MILLIS 3000
 
 #ifndef UI_RECENT_LIST_SIZE
   #define UI_RECENT_LIST_SIZE 4
@@ -63,13 +67,13 @@ public:
     display.drawTextCentered(display.width()/2, 22, _version_info);
 
     display.setTextSize(1);
-#ifdef OLED_RU
-    char filtered_date[sizeof(FIRMWARE_BUILD_DATE)];
-    display.translateUTF8ToBlocks(filtered_date, FIRMWARE_BUILD_DATE, sizeof(filtered_date));
-    display.drawTextCentered(display.width()/2, 42, filtered_date);
-#else
-    display.drawTextCentered(display.width()/2, 42, FIRMWARE_BUILD_DATE);
-#endif
+    #ifdef OLED_RU
+        char filtered_date[sizeof(FIRMWARE_BUILD_DATE)];
+        display.translateUTF8ToBlocks(filtered_date, FIRMWARE_BUILD_DATE, sizeof(filtered_date));
+        display.drawTextCentered(display.width()/2, 42, filtered_date);
+    #else
+        display.drawTextCentered(display.width()/2, 42, FIRMWARE_BUILD_DATE);
+    #endif
 
     return 1000;
   }
@@ -86,46 +90,44 @@ class HomeScreen : public UIScreen {
     FIRST,
     RECENT,
     RADIO,
-    BLUETOOTH,
-    ADVERT,
 #if ENV_INCLUDE_GPS == 1
     GPS,
 #endif
 #if UI_SENSORS_PAGE == 1
     SENSORS,
 #endif
-    SHUTDOWN,
-    Count    // keep as last
+    TIME,  
+    Count,         // keep last
+    SCREENSAVER    // reserved for screensaver
   };
 
   UITask* _task;
   mesh::RTCClock* _rtc;
   SensorManager* _sensors;
   NodePrefs* _node_prefs;
-  uint8_t _page;
-  bool _shutdown_init;
   AdvertPath recent[UI_RECENT_LIST_SIZE];
 
 
   void renderBatteryIndicator(DisplayDriver& display, uint16_t batteryMilliVolts) {
     // Convert millivolts to percentage
-#ifndef BATT_MIN_MILLIVOLTS
-  #define BATT_MIN_MILLIVOLTS 3300
-#endif
-#ifndef BATT_MAX_MILLIVOLTS
-  #define BATT_MAX_MILLIVOLTS 4200
-#endif
+    #ifndef BATT_MIN_MILLIVOLTS
+      #define BATT_MIN_MILLIVOLTS 3300
+    #endif
+    #ifndef BATT_MAX_MILLIVOLTS
+      #define BATT_MAX_MILLIVOLTS 4200
+    #endif
     const int minMilliVolts = BATT_MIN_MILLIVOLTS;
     const int maxMilliVolts = BATT_MAX_MILLIVOLTS;
     int batteryPercentage = ((batteryMilliVolts - minMilliVolts) * 100) / (maxMilliVolts - minMilliVolts);
-    if (batteryPercentage < 0) batteryPercentage = 0; // Clamp to 0%
-    if (batteryPercentage > 100) batteryPercentage = 100; // Clamp to 100%
+    if (batteryPercentage < 0) batteryPercentage = 0;      // Clamp to 0%
+    if (batteryPercentage > 100) batteryPercentage = 100;  // Clamp to 100%
 
     // battery icon
     int iconWidth = 24;
     int iconHeight = 7;
     int iconX = display.width() - iconWidth - 2; // Position the icon near the top-right corner
     int iconY = 0;
+    display.setContrast(DISPLAY_CONTRAST);
     display.setColor(DisplayDriver::GREEN);
 
     // battery outline
@@ -164,24 +166,58 @@ class HomeScreen : public UIScreen {
   }
 
 public:
-  HomeScreen(UITask* task, mesh::RTCClock* rtc, SensorManager* sensors, NodePrefs* node_prefs)
-     : _task(task), _rtc(rtc), _sensors(sensors), _node_prefs(node_prefs), _page(0), 
-       _shutdown_init(false), sensors_lpp(200) {  }
-
-  void poll() override {
-    if (_shutdown_init && !_task->isButtonPressed()) {  // must wait for USR button to be released
-      _task->shutdown();
+  uint8_t _page;
+  uint8_t _page_before_screensaver = HomePage::FIRST;
+  
+  void activateScreensaver() {
+    if (_page != HomePage::SCREENSAVER) {
+      _page_before_screensaver = _page;
     }
+    _page = HomePage::SCREENSAVER;
   }
+
+  void deactivateScreensaver() {
+    _page = _page_before_screensaver;  
+  }
+  
+  bool isScreensaverActive() const {
+    return _page == HomePage::SCREENSAVER;
+  }
+
+  HomeScreen(UITask* task, mesh::RTCClock* rtc, SensorManager* sensors, NodePrefs* node_prefs)
+     : _task(task), _rtc(rtc), _sensors(sensors), _node_prefs(node_prefs), _page(0), sensors_lpp(200) {  }
 
   int render(DisplayDriver& display) override {
     char tmp[80];
+
+    if (_page == HomePage::SCREENSAVER) {
+      display.setColor(DisplayDriver::LIGHT);
+      
+      if (_node_prefs->screensaver_dimmed) {
+        display.setContrast(SCREENSAVER_CONTRAST);
+      } else {
+        display.setContrast(DISPLAY_CONTRAST);
+      }
+      
+      display.setTextSize(4);
+      uint32_t current_time = _rtc->getCurrentTime() + TIMEZONE_OFFSET;
+      DateTime dt(current_time);
+      sprintf(tmp, "%02d:%02d", dt.hour(), dt.minute());
+      display.drawTextCentered(display.width()/2, 11, tmp);
+      
+      display.setTextSize(1);
+      sprintf(tmp, "%02d.%02d.%04d", dt.day(), dt.month(), dt.year());
+      display.drawTextCentered(display.width()/2, 48, tmp);
+      
+      return 1000;  // refresh every second
+    }
+
     // node name
     display.setTextSize(1);
     display.setColor(DisplayDriver::GREEN);
     char filtered_name[sizeof(_node_prefs->node_name)];
     display.translateUTF8ToBlocks(filtered_name, _node_prefs->node_name, sizeof(filtered_name));
-    int iconWidth = 24; // Must match iconWidth in renderBatteryIndicator
+    int iconWidth = 24;                       // Must match iconWidth in renderBatteryIndicator
     int max_name_width = display.width() - iconWidth - 4;
     display.drawTextEllipsized(2, 0, max_name_width, filtered_name);
     // battery voltage
@@ -223,6 +259,12 @@ public:
       }
     } else if (_page == HomePage::RECENT) {
       the_mesh.getRecentlyHeard(recent, UI_RECENT_LIST_SIZE);
+      if(recent[0].name[0] == NULL) {
+        display.setColor(DisplayDriver::RED);
+        display.setTextSize(1);
+        display.drawTextCentered(display.width()/2, 32, "No adverts received");
+        return 1000;
+      }
       display.setColor(DisplayDriver::GREEN);
       int y = 20;
       for (int i = 0; i < UI_RECENT_LIST_SIZE; i++, y += 11) {
@@ -265,17 +307,7 @@ public:
       display.setCursor(0, 53);
       sprintf(tmp, "Noise floor: %ddB", radio_driver.getNoiseFloor());
       display.print(tmp);
-    } else if (_page == HomePage::BLUETOOTH) {
-      display.setColor(DisplayDriver::GREEN);
-      display.drawXbm((display.width() - 32) / 2, 18,
-          _task->isSerialEnabled() ? bluetooth_on : bluetooth_off,
-          32, 32);
-      display.setTextSize(1);
-      display.drawTextCentered(display.width() / 2, 64 - 11, "toggle: " PRESS_LABEL);
-    } else if (_page == HomePage::ADVERT) {
-      display.setColor(DisplayDriver::GREEN);
-      display.drawXbm((display.width() - 32) / 2, 18, advert_icon, 32, 32);
-      display.drawTextCentered(display.width() / 2, 64 - 11, "advert: " PRESS_LABEL);
+
 #if ENV_INCLUDE_GPS == 1
     } else if (_page == HomePage::GPS) {
       LocationProvider* nmea = sensors.getLocationProvider();
@@ -386,21 +418,34 @@ public:
       }
       if (sensors_scroll) sensors_scroll_offset = (sensors_scroll_offset+1)%sensors_nb;
       else sensors_scroll_offset = 0;
-#endif
-    } else if (_page == HomePage::SHUTDOWN) {
-      display.setColor(DisplayDriver::GREEN);
-      display.setTextSize(1);
-      if (_shutdown_init) {
-        display.drawTextCentered(display.width() / 2, 34, "hibernating...");
-      } else {
-        display.drawXbm((display.width() - 32) / 2, 18, power_icon, 32, 32);
-        display.drawTextCentered(display.width() / 2, 64 - 11, "hibernate:" PRESS_LABEL);
-      }
+      #endif
+    } else if (_page == HomePage::TIME) {
+    uint32_t current_time = rtc_clock.getCurrentTime() + TIMEZONE_OFFSET;
+    DateTime dt(current_time);
+    sprintf(tmp, "%02d:%02d", dt.hour(), dt.minute());
+    display.setTextSize(4);
+    display.drawTextCentered(display.width()/2, 21, tmp);
+    display.setTextSize(1);
+    sprintf(tmp, "%02d.%02d.%04d", dt.day(), dt.month(), dt.year());
+    display.drawTextCentered(display.width()/2, 54, tmp);
     }
     return 5000;   // next render after 5000 ms
   }
 
   bool handleInput(char c) override {
+
+    if (_page == HomePage::SCREENSAVER) {
+      if (c == KEY_ENTER) {
+        _node_prefs->screensaver_dimmed = !_node_prefs->screensaver_dimmed;
+        the_mesh.savePrefs();
+        c = 0;
+        return true;
+      }
+        _page = _page_before_screensaver;  // go back to previous page
+        c = 0;
+      return true;
+    }
+
     if (c == KEY_LEFT || c == KEY_PREV) {
       _page = (_page + HomePage::Count - 1) % HomePage::Count;
       return true;
@@ -408,19 +453,21 @@ public:
     if (c == KEY_NEXT || c == KEY_RIGHT) {
       _page = (_page + 1) % HomePage::Count;
       if (_page == HomePage::RECENT) {
-        _task->showAlert("Recent adverts", 800);
+        _task->showAlert("Send: long press", 1000);
       }
       return true;
     }
-    if (c == KEY_ENTER && _page == HomePage::BLUETOOTH) {
+    if (c == KEY_ENTER && _page == HomePage::RADIO) {
       if (_task->isSerialEnabled()) {  // toggle Bluetooth on/off
         _task->disableSerial();
+        _task->showAlert("Bluetooth OFF", 1000);
       } else {
         _task->enableSerial();
+        _task->showAlert("Bluetooth ON", 1000);
       }
       return true;
     }
-    if (c == KEY_ENTER && _page == HomePage::ADVERT) {
+    if (c == KEY_ENTER && _page == HomePage::RECENT) {
       _task->notify(UIEventType::ack);
       if (the_mesh.advert()) {
         _task->showAlert("Advert sent!", 1000);
@@ -442,8 +489,9 @@ public:
       return true;
     }
 #endif
-    if (c == KEY_ENTER && _page == HomePage::SHUTDOWN) {
-      _shutdown_init = true;  // need to wait for button to be released
+
+    if (c == KEY_ENTER && _page == HomePage::TIME) {
+      _task->toggleScreensaver();
       return true;
     }
     return false;
@@ -586,6 +634,7 @@ void UITask::begin(DisplayDriver* display, SensorManager* sensors, NodePrefs* no
   _alert_expiry = 0;
 
   splash = new SplashScreen(this);
+  screensaver_on = _node_prefs->screensaver_enabled;
   home = new HomeScreen(this, &rtc_clock, sensors, node_prefs);
   msg_preview = new MsgPreviewScreen(this, &rtc_clock);
   setCurrScreen(splash);
@@ -637,15 +686,18 @@ void UITask::newMsg(uint8_t path_len, const char* from_name, const char* text, i
   _msgcount = msgcount;
 
   ((MsgPreviewScreen *) msg_preview)->addPreview(path_len, from_name, text);
-  setCurrScreen(msg_preview);
+  
+  bool on_screensaver = (curr == home && ((HomeScreen*)home)->isScreensaverActive());
+  if (!on_screensaver) { setCurrScreen(msg_preview); }
 
   if (_display != NULL) {
     if (!_display->isOn() && !hasConnection()) {
       _display->turnOn();
     }
-    if (_display->isOn()) {
-    _auto_off = millis() + AUTO_OFF_MILLIS;  // extend the auto-off timer
-    _next_refresh = 100;  // trigger refresh
+    bool on_screensaver = (curr == home && ((HomeScreen*)home)->isScreensaverActive());
+    if (_display->isOn() && !on_screensaver) {
+      _auto_off = millis() + AUTO_OFF_MILLIS;
+      _next_refresh = 100;
     }
   }
 }
@@ -712,8 +764,19 @@ bool UITask::isButtonPressed() const {
 }
 
 void UITask::loop() {
+
+  handleHibernation();
+    if (_hibernation_pending) {
+      #ifdef PIN_BUZZER
+      if (buzzer.isPlaying()) buzzer.loop();
+      #endif
+      #ifdef PIN_VIBRATION
+      vibration.loop();
+      #endif
+      return;
+  }
   char c = 0;
-#if UI_HAS_JOYSTICK
+  #if UI_HAS_JOYSTICK
   int ev = user_btn.check();
   if (ev == BUTTON_EVENT_CLICK) {
     c = checkDisplayOn(KEY_ENTER);
@@ -810,7 +873,12 @@ void UITask::loop() {
     }
 #if AUTO_OFF_MILLIS > 0
     if (millis() > _auto_off) {
-      _display->turnOff();
+      if (screensaver_on && curr == home) {
+        ((HomeScreen*)home)->activateScreensaver();
+        _next_refresh = 0;
+      } else {
+        _display->turnOff();
+      }
     }
 #endif
   }
@@ -847,12 +915,16 @@ void UITask::loop() {
 
 char UITask::checkDisplayOn(char c) {
   if (_display != NULL) {
-    if (!_display->isOn()) {
-      _display->turnOn();   // turn display on and consume event
+    if (_display->isOn() && curr == home && ((HomeScreen*)home)->isScreensaverActive()) {
+      ((HomeScreen*)home)->deactivateScreensaver(); 
+      c = 0;  // consume event
+    }
+        if (!_display->isOn()) {
+      _display->turnOn();
       c = 0;
     }
-    _auto_off = millis() + AUTO_OFF_MILLIS;   // extend auto-off timer
-    _next_refresh = 0;  // trigger refresh
+    _auto_off = millis() + AUTO_OFF_MILLIS;
+    _next_refresh = 0;
   }
   return c;
 }
@@ -889,6 +961,14 @@ bool UITask::getGPSState() {
     }
   } 
   return false;
+}
+
+void UITask::toggleScreensaver() {
+  screensaver_on = !screensaver_on;
+  _node_prefs->screensaver_enabled = screensaver_on;
+  the_mesh.savePrefs();
+  showAlert(screensaver_on ? "Screensaver: ON" : "Screensaver: OFF", 1000);
+  _next_refresh = 0;
 }
 
 void UITask::toggleGPS() {
@@ -929,4 +1009,80 @@ void UITask::toggleBuzzer() {
     showAlert(buzzer.isQuiet() ? "Buzzer: OFF" : "Buzzer: ON", 800);
     _next_refresh = 0;  // trigger refresh
   #endif
+}
+
+void UITask::handleHibernation() {
+  
+    if (curr != home || ((HomeScreen*)home)->_page != 0) {
+      return;
+    }
+  
+    bool button_pressed = isButtonPressed();
+    
+    // Detect button press start
+    if (button_pressed && !_button_was_pressed) {
+        _button_press_start = millis();
+        _button_was_pressed = true;
+    }
+    
+    // Detect button release
+    if (!button_pressed && _button_was_pressed) {
+        _button_was_pressed = false;
+        _button_press_start = 0;
+        
+        // If hibernation was pending and button released, proceed to hibernate
+        if (_hibernation_pending) {
+            _hibernation_pending = false;
+            shutdown(false); // false = hibernate, true = restart
+        }
+    }
+    
+    // Check for long press
+    if (button_pressed && _button_was_pressed) {
+        unsigned long press_duration = millis() - _button_press_start;
+        
+        // Initial long press (5 seconds) - show warning
+        if (press_duration >= LONG_PRESS_MILLIS && !_hibernation_pending && millis() - ui_started_at > 10000) {
+            _hibernation_pending = true;
+            _auto_off = millis() + AUTO_OFF_MILLIS + HIBERNATE_CANCEL_MILLIS;
+            
+            if (_display != NULL) {
+                _display->startFrame();
+                _display->setTextSize(1);
+                _display->setColor(DisplayDriver::YELLOW);
+                _display->drawTextCentered(_display->width() / 2, 15, "Release to POWER OFF");
+                _display->drawTextCentered(_display->width() / 2, 26, "...");
+                _display->drawTextCentered(_display->width() / 2, 40, "or hold to CANCEL");
+
+                _display->endFrame();
+            }
+            
+            #ifdef PIN_BUZZER
+            buzzer.play("hibernate:d=8,o=6,b=180:c,e,g");
+            #endif
+            
+            #ifdef PIN_VIBRATION
+            vibration.trigger();
+            #endif
+        }
+        
+        // If still holding after warning - CANCEL hibernation
+        if (_hibernation_pending && press_duration >= (LONG_PRESS_MILLIS + HIBERNATE_CANCEL_MILLIS)) {
+            _hibernation_pending = false;
+            _button_was_pressed = false;  // Reset button state
+            _button_press_start = 0;
+                        
+            #ifdef PIN_BUZZER
+            buzzer.play("cancel:d=8,o=6,b=180:g,e,c");  // reverse melody
+            #endif
+            
+            #ifdef PIN_VIBRATION
+            vibration.trigger();
+            #endif
+            
+            // Show alert in UI
+            showAlert("Power off cancelled", 1500);
+            _next_refresh = 0;
+        }
+    }
 }

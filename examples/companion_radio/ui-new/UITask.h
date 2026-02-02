@@ -60,7 +60,6 @@ class UITask : public AbstractUITask {
   char handleLongPress(char c);
   char handleDoubleClick(char c);
   char handleTripleClick(char c);
-
   void setCurrScreen(UIScreen* c);
 
 public:
@@ -77,11 +76,12 @@ public:
   int  getMsgCount() const { return _msgcount; }
   bool hasDisplay() const { return _display != NULL; }
   bool isButtonPressed() const;
-
+  void handleHibernation();
   void toggleBuzzer();
   bool getGPSState();
   void toggleGPS();
-
+  void toggleScreensaver();
+  bool screensaver_on = false;       // screensaver mode flag
 
   // from AbstractUITask
   void msgRead(int msgcount) override;
@@ -90,4 +90,9 @@ public:
   void loop() override;
 
   void shutdown(bool restart = false);
+
+  private:
+    unsigned long _button_press_start = 0;
+    bool _hibernation_pending = false;
+    bool _button_was_pressed = false;
 };
