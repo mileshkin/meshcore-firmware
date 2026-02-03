@@ -96,6 +96,15 @@ void ST7789Display::setTextSize(int sz) {
   }
 }
 
+void ST7789Display::setContrast(int contrast) {
+    // NULL method to match interface
+}
+
+bool ST7789Display::dim(bool dimmed) {
+    // NULL method to match interface
+    return false;
+}
+
 void ST7789Display::setColor(Color c) {
   switch (c) {
     case DisplayDriver::DARK :

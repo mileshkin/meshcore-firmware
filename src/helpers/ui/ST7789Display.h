@@ -28,6 +28,8 @@ public:
   void startFrame(Color bkg = DARK) override;
   void setTextSize(int sz) override;
   void setColor(Color c) override;
+  void setContrast(int contrast) override; // NULL method to match interface
+  bool dim(bool dimmed) override;          // NULL method to match interface 
   void setCursor(int x, int y) override;
   void print(const char* str) override;
   void printWordWrap(const char* str, int max_width) override;
