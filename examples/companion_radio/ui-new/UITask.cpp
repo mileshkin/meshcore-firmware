@@ -12,7 +12,7 @@
 #define BOOT_SCREEN_MILLIS   3000   // 3 seconds
 #define TIMEZONE_OFFSET      10800  // UTC+3 in seconds
 #define DISPLAY_CONTRAST     255
-#define SCREENSAVER_CONTRAST 0
+#define SCREENSAVER_CONTRAST 1
 
 #ifdef  PIN_STATUS_LED
   #define LED_ON_MILLIS     20

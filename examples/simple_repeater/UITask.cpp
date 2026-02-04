@@ -105,7 +105,7 @@ void UITask::renderCurrScreen() {
     _display->drawTextCentered(_display->width()/2, 53, tmp);
 
     // battery math
-    _battery_mv = (float)_board->getBattMilliVolts();
+    _battery_mv = _board->getBattMilliVolts();
     batteryPercentage = (int)(((_battery_mv - minMilliVolts) * 100) / (maxMilliVolts - minMilliVolts));
           if (batteryPercentage < 0) batteryPercentage = 0; // Clamp to 0%
           if (batteryPercentage > 100) batteryPercentage = 100; // Clamp to 100%
