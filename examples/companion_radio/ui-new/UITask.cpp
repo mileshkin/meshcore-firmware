@@ -604,9 +604,62 @@ void UITask::begin(DisplayDriver* display, SensorManager* sensors, NodePrefs* no
   _node_prefs = node_prefs;
 
 #if ENV_INCLUDE_GPS == 1
+  // Initialize GPS hardware pins
+  #ifdef PIN_GPS_EN
+    pinMode(PIN_GPS_EN, OUTPUT);
+  #endif
+  #ifdef PIN_GPS_STANDBY
+    pinMode(PIN_GPS_STANDBY, OUTPUT);
+  #endif
+  #ifdef PIN_GPS_RESET
+    pinMode(PIN_GPS_RESET, OUTPUT);
+    #ifdef PIN_GPS_RESET_ACTIVE
+      digitalWrite(PIN_GPS_RESET, !PIN_GPS_RESET_ACTIVE);  // Keep GPS out of reset
+    #else
+      digitalWrite(PIN_GPS_RESET, HIGH);  // Default: keep GPS out of reset
+    #endif
+  #endif
+
   // Apply GPS preferences from stored prefs
   if (_sensors != NULL && _node_prefs != NULL) {
     _sensors->setSettingValue("gps", _node_prefs->gps_enabled ? "1" : "0");
+    
+    // Set hardware GPS state based on preferences
+    if (_node_prefs->gps_enabled) {
+      // Enable GPS
+      #ifdef PIN_GPS_EN
+        #ifdef PIN_GPS_EN_ACTIVE
+          digitalWrite(PIN_GPS_EN, PIN_GPS_EN_ACTIVE);  // Enable GPS power
+        #else
+          digitalWrite(PIN_GPS_EN, HIGH);  // Default: enable GPS power
+        #endif
+      #endif
+      #ifdef PIN_GPS_STANDBY
+        delay(100);  // Wait for power stabilization
+        #ifdef PIN_GPS_STANDBY_ACTIVE
+          digitalWrite(PIN_GPS_STANDBY, !PIN_GPS_STANDBY_ACTIVE);  // Wake GPS from sleep (inverse of active)
+        #else
+          digitalWrite(PIN_GPS_STANDBY, HIGH);  // Default: wake GPS from sleep
+        #endif
+      #endif
+    } else {
+      // Disable GPS
+      #ifdef PIN_GPS_EN
+        #ifdef PIN_GPS_EN_ACTIVE
+          digitalWrite(PIN_GPS_EN, !PIN_GPS_EN_ACTIVE);  // Disable GPS power
+        #else
+          digitalWrite(PIN_GPS_EN, LOW);  // Default: disable GPS power
+        #endif
+      #endif
+      #ifdef PIN_GPS_STANDBY
+        #ifdef PIN_GPS_STANDBY_ACTIVE
+          digitalWrite(PIN_GPS_STANDBY, PIN_GPS_STANDBY_ACTIVE);  // Put GPS to sleep
+        #else
+          digitalWrite(PIN_GPS_STANDBY, LOW);  // Default: put GPS to sleep
+        #endif
+      #endif
+    }
+    
     if (_node_prefs->gps_interval > 0) {
       char interval_str[12];  // Max: 24 hours = 86400 seconds (5 digits + null)
       sprintf(interval_str, "%u", _node_prefs->gps_interval);
@@ -747,6 +800,22 @@ void UITask::shutdown(bool restart){
   if (restart) {
     _board->reboot();
   } else {
+    // Turn off GPS before shutdown to save power
+    #ifdef PIN_GPS_EN
+      #ifdef PIN_GPS_EN_ACTIVE
+        digitalWrite(PIN_GPS_EN, !PIN_GPS_EN_ACTIVE);  // Disable GPS power
+      #else
+        digitalWrite(PIN_GPS_EN, LOW);  // Default: disable GPS power
+      #endif
+    #endif
+    #ifdef PIN_GPS_STANDBY
+      #ifdef PIN_GPS_STANDBY_ACTIVE
+        digitalWrite(PIN_GPS_STANDBY, PIN_GPS_STANDBY_ACTIVE);  // Put GPS to sleep
+      #else
+        digitalWrite(PIN_GPS_STANDBY, LOW);  // Default: put GPS to sleep
+      #endif
+    #endif
+    
     _display->turnOff();
     radio_driver.powerOff();
     _board->powerOff();
@@ -978,10 +1047,45 @@ void UITask::toggleGPS() {
         if (strcmp(_sensors->getSettingValue(i), "1") == 0) {
           _sensors->setSettingValue("gps", "0");
           _node_prefs->gps_enabled = 0;
+          
+          // Hardware GPS control - turn OFF
+          #ifdef PIN_GPS_EN
+            #ifdef PIN_GPS_EN_ACTIVE
+              digitalWrite(PIN_GPS_EN, !PIN_GPS_EN_ACTIVE);  // Disable GPS power
+            #else
+              digitalWrite(PIN_GPS_EN, LOW);  // Default: disable GPS power
+            #endif
+          #endif
+          #ifdef PIN_GPS_STANDBY
+            #ifdef PIN_GPS_STANDBY_ACTIVE
+              digitalWrite(PIN_GPS_STANDBY, PIN_GPS_STANDBY_ACTIVE);  // Put GPS to sleep
+            #else
+              digitalWrite(PIN_GPS_STANDBY, LOW);  // Default: put GPS to sleep
+            #endif
+          #endif
+          
           notify(UIEventType::ack);
         } else {
           _sensors->setSettingValue("gps", "1");
           _node_prefs->gps_enabled = 1;
+          
+          // Hardware GPS control - turn ON
+          #ifdef PIN_GPS_EN
+            #ifdef PIN_GPS_EN_ACTIVE
+              digitalWrite(PIN_GPS_EN, PIN_GPS_EN_ACTIVE);  // Enable GPS power
+            #else
+              digitalWrite(PIN_GPS_EN, HIGH);  // Default: enable GPS power
+            #endif
+          #endif
+          #ifdef PIN_GPS_STANDBY
+            delay(100);  // Wait for power stabilization
+            #ifdef PIN_GPS_STANDBY_ACTIVE
+              digitalWrite(PIN_GPS_STANDBY, !PIN_GPS_STANDBY_ACTIVE);  // Wake GPS from sleep (inverse of active)
+            #else
+              digitalWrite(PIN_GPS_STANDBY, HIGH);  // Default: wake GPS from sleep
+            #endif
+          #endif
+          
           notify(UIEventType::ack);
         }
         the_mesh.savePrefs();
