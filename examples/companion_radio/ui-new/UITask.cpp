@@ -800,21 +800,10 @@ void UITask::shutdown(bool restart){
   if (restart) {
     _board->reboot();
   } else {
-    // Turn off GPS before shutdown to save power
-    #ifdef PIN_GPS_EN
-      #ifdef PIN_GPS_EN_ACTIVE
-        digitalWrite(PIN_GPS_EN, !PIN_GPS_EN_ACTIVE);  // Disable GPS power
-      #else
-        digitalWrite(PIN_GPS_EN, LOW);  // Default: disable GPS power
-      #endif
-    #endif
-    #ifdef PIN_GPS_STANDBY
-      #ifdef PIN_GPS_STANDBY_ACTIVE
-        digitalWrite(PIN_GPS_STANDBY, PIN_GPS_STANDBY_ACTIVE);  // Put GPS to sleep
-      #else
-        digitalWrite(PIN_GPS_STANDBY, LOW);  // Default: put GPS to sleep
-      #endif
-    #endif
+    // Turn off GPS if it's enabled before shutdown to save power
+    if (getGPSState()) {
+      toggleGPS();
+    }
     
     _display->turnOff();
     radio_driver.powerOff();

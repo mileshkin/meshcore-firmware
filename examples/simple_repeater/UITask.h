@@ -13,7 +13,11 @@ class UITask {
   mesh::RTCClock* _rtc;
   mesh::MainBoard* _board;
   unsigned long _press_start;
-
+  bool _button_was_pressed;
+  unsigned long _button_press_start;
+  bool _hibernation_pending;
+  bool isButtonPressed() const;
+  void handleHibernation();
   void renderCurrScreen();
   void shutdown(bool restart = false);
 public:

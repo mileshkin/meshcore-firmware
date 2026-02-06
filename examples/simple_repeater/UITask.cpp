@@ -4,7 +4,9 @@
 #include <helpers/CommonCLI.h>
 #include "icons.h"
 #include <MeshCore.h>
-
+#ifdef WITH_MQTT_BRIDGE
+  #include <WiFi.h>
+#endif
 
 #define AUTO_OFF_MILLIS      15000  // 15 seconds
 
@@ -16,10 +18,14 @@
 
 #define TIMEZONE_OFFSET       10800  // UTC+3 in seconds
 #define LONG_PRESS_MILLIS     5000   // 5 seconds for long press
+#define HIBERNATE_CANCEL_MILLIS 3000 // 3 seconds to cancel hibernation
+#define DISPLAY_SWITCH_MILLIS 5000   // 5 seconds for display switch
 
 uint16_t _battery_mv = 0;
 int batteryPercentage = 0;
 uint32_t _next_batt_read = 0;
+uint32_t _next_display_switch = 0;  // Timer for switching display
+bool _show_ip = false;  // Flag to alternate between node name and IP
 
 const int minMilliVolts = 3300; // Minimum voltage (e.g., 3.3V)
 const int maxMilliVolts = 4200; // Maximum voltage (e.g., 4.2V)
@@ -31,6 +37,9 @@ void UITask::begin(NodePrefs* node_prefs, const char* build_date, const char* fi
   _rtc = rtc;
   _board = board;
   _press_start = 0;
+  _button_was_pressed = false;
+  _button_press_start = 0;
+  _hibernation_pending = false;
   _display->turnOn();
   
    // version info trimming
@@ -52,6 +61,89 @@ void UITask::shutdown(bool restart){
     _display->turnOff();
     radio_driver.powerOff();
     _board->powerOff();
+  }
+}
+
+bool UITask::isButtonPressed() const {
+#ifdef PIN_USER_BTN
+  return digitalRead(PIN_USER_BTN) == LOW;
+#else
+  return false;
+#endif
+}
+
+void UITask::handleHibernation() {
+  bool button_pressed = isButtonPressed();
+  
+  // Detect button press start
+  if (button_pressed && !_button_was_pressed) {
+    _button_press_start = millis();
+    _button_was_pressed = true;
+    
+    // Turn on display and extend auto-off timer
+    if (!_display->isOn()) {
+      _display->turnOn();
+    }
+    _auto_off = millis() + AUTO_OFF_MILLIS;
+  }
+  
+  // Detect button release
+  if (!button_pressed && _button_was_pressed) {
+    _button_was_pressed = false;
+    _button_press_start = 0;
+    
+    // If hibernation was pending and button released, proceed to hibernate
+    if (_hibernation_pending) {
+      _hibernation_pending = false;
+      shutdown(false); // false = hibernate, true = restart
+    }
+  }
+  
+  // Check for long press
+  if (button_pressed && _button_was_pressed) {
+    unsigned long press_duration = millis() - _button_press_start;
+    
+    // Initial long press (5 seconds) - show warning
+    if (press_duration >= LONG_PRESS_MILLIS && !_hibernation_pending) {
+      _hibernation_pending = true;
+      _auto_off = millis() + AUTO_OFF_MILLIS + HIBERNATE_CANCEL_MILLIS;
+      
+      if (_display != NULL) {
+        _display->startFrame();
+        _display->setTextSize(1);
+        _display->setColor(DisplayDriver::YELLOW);
+        _display->drawTextCentered(_display->width() / 2, 15, "Release to POWER OFF");
+        _display->drawTextCentered(_display->width() / 2, 26, "...");
+        _display->drawTextCentered(_display->width() / 2, 40, "or hold to CANCEL");
+        _display->endFrame();
+      }
+      
+      #ifdef PIN_BUZZER
+      buzzer.play("hibernate:d=8,o=6,b=180:c,e,g");
+      #endif
+      
+      #ifdef PIN_VIBRATION
+      vibration.trigger();
+      #endif
+    }
+    
+    // If still holding after warning - CANCEL hibernation
+    if (_hibernation_pending && press_duration >= (LONG_PRESS_MILLIS + HIBERNATE_CANCEL_MILLIS)) {
+      _hibernation_pending = false;
+      _button_was_pressed = false;  // Reset button state
+      _button_press_start = 0;
+      
+      #ifdef PIN_BUZZER
+      buzzer.play("cancel:d=8,o=6,b=180:g,e,c");  // reverse melody
+      #endif
+      
+      #ifdef PIN_VIBRATION
+      vibration.trigger();
+      #endif
+      
+      // Refresh display to clear hibernation message
+      _next_refresh = 0;
+    }
   }
 }
 
@@ -88,7 +180,30 @@ void UITask::renderCurrScreen() {
     // node name
     _display->drawXbm(1, 13, horizontal_line, 126, 1);
     _display->setColor(DisplayDriver::GREEN);
-    _display->drawTextCentered(_display->width()/2, 17, _node_prefs->node_name);
+
+              #ifdef WITH_MQTT_BRIDGE
+              // Check if it's time to switch display
+              if (millis() >= _next_display_switch) {
+              _show_ip = !_show_ip;  // Toggle between node name and IP
+              _next_display_switch = millis() + DISPLAY_SWITCH_MILLIS;
+              }
+              if (_show_ip && WiFi.status() == WL_CONNECTED) {
+              // Display IP address
+              IPAddress ip = WiFi.localIP();
+              snprintf(tmp, sizeof(tmp), "IP:%d.%d.%d.%d", ip[0], ip[1], ip[2], ip[3]);
+              _display->drawTextCentered(_display->width()/2, 17, tmp);
+              } else if (_show_ip && WiFi.status() != WL_CONNECTED) {
+              // Display WiFi disconnected message
+              _display->drawTextCentered(_display->width()/2, 17, "WiFi Disconnected");
+              } else {
+              // Display node name
+              _display->drawTextCentered(_display->width()/2, 17, _node_prefs->node_name);
+              }
+              #else
+              // If MQTT bridge is not enabled, always show node name
+              _display->drawTextCentered(_display->width()/2, 17, _node_prefs->node_name);
+              #endif
+              
     _display->drawXbm(1, 27, horizontal_line, 126, 1);
 
     // freq / sf
@@ -132,30 +247,19 @@ void UITask::renderCurrScreen() {
 }
 
 void UITask::loop() {
-#ifdef PIN_USER_BTN
-  if (millis() >= _next_read) {
-    int btnState = digitalRead(PIN_USER_BTN);
-    if (btnState != _prevBtnState) {
-      if (btnState == LOW) {  // pressed
-        _press_start = millis();
-        if (!_display->isOn()) {
-          _display->turnOn();
-        }
-        _auto_off = millis() + AUTO_OFF_MILLIS;   // extend auto-off timer
-      } else {  // released
-        if (_press_start > 0 && (millis() - _press_start) >= LONG_PRESS_MILLIS) {
-          // long press detected, shutdown
-          _display->turnOff();
-          radio_driver.powerOff();
-          _board->powerOff();
-        }
-        _press_start = 0;
-      }
-      _prevBtnState = btnState;
-    }
-    _next_read = millis() + 200;  // 5 reads per second
+  
+  handleHibernation();
+  
+  // If hibernation is pending, only process buzzer/vibration loops
+  if (_hibernation_pending) {
+    #ifdef PIN_BUZZER
+    if (buzzer.isPlaying()) buzzer.loop();
+    #endif
+    #ifdef PIN_VIBRATION
+    vibration.loop();
+    #endif
+    return;
   }
-#endif
 
   if (_display->isOn()) {
     if (millis() >= _next_refresh) {
