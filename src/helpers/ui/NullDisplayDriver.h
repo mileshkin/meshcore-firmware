@@ -13,6 +13,8 @@ public:
   void clear() override { }
   void startFrame(Color bkg = DARK) override { }
   void setTextSize(int sz) override { }
+  void setContrast(int contrast) override { }
+  bool dim(bool dimmed) override { return false; }
   void setColor(Color c) override { }
   void setCursor(int x, int y) override { }
   void print(const char* str) override { }
