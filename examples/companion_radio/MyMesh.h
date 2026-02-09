@@ -8,14 +8,14 @@
 #define FIRMWARE_VER_CODE 8
 
 #ifndef FIRMWARE_BUILD_DATE
-#define FIRMWARE_BUILD_DATE "06 Feb 2026"
+#define FIRMWARE_BUILD_DATE "09 Feb 2026"
 #endif
 
 #ifndef FIRMWARE_VERSION
   #ifdef HELTEC_LORA_V4
-    #define FIRMWARE_VERSION   "v1.12.0.6-RU-RXFIX"
+    #define FIRMWARE_VERSION   "v1.12.0.9-RU-RXFIX"
   #else
-    #define FIRMWARE_VERSION   "v1.12.0.6-RU"
+    #define FIRMWARE_VERSION   "v1.12.0.9-RU"
   #endif
 #endif
 
