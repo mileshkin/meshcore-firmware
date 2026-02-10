@@ -3,6 +3,10 @@
 #include "CustomSX1262.h"
 #include "RadioLibWrappers.h"
 
+#ifndef RSSI_OFFSET
+  #define RSSI_OFFSET 0  // LNA GAIN COMPENSATION OFFSET FOR HELTEC V4 OR ANY BOARD WITH EXTERNAL LNA
+#endif
+
 class CustomSX1262Wrapper : public RadioLibWrapper {
 public:
   CustomSX1262Wrapper(CustomSX1262& radio, mesh::MainBoard& board) : RadioLibWrapper(radio, board) { }
@@ -10,9 +14,9 @@ public:
     return ((CustomSX1262 *)_radio)->isReceiving();
   }
   float getCurrentRSSI() override {
-    return ((CustomSX1262 *)_radio)->getRSSI(false);
+    return ((CustomSX1262 *)_radio)->getRSSI(false) + RSSI_OFFSET;
   }
-  float getLastRSSI() const override { return ((CustomSX1262 *)_radio)->getRSSI(); }
+  float getLastRSSI() const override { return ((CustomSX1262 *)_radio)->getRSSI() + RSSI_OFFSET; }
   float getLastSNR() const override { return ((CustomSX1262 *)_radio)->getSNR(); }
 
   float packetScore(float snr, int packet_len) override {
