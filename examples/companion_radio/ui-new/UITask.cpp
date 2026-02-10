@@ -199,16 +199,23 @@ public:
         display.setContrast(DISPLAY_CONTRAST);
       }
       
-      display.setTextSize(4);
       uint32_t current_time = _rtc->getCurrentTime() + TIMEZONE_OFFSET;
       DateTime dt(current_time);
       sprintf(tmp, "%02d:%02d", dt.hour(), dt.minute());
+      #ifdef ST7789
+      display.setTextSize(2);
+      display.drawTextCentered(display.width()/2, 13, tmp);
+      #else
+      display.setTextSize(4);
       display.drawTextCentered(display.width()/2, 11, tmp);
-      
+      #endif
       display.setTextSize(1);
       sprintf(tmp, "%02d.%02d.%04d", dt.day(), dt.month(), dt.year());
+      #ifdef ST7789
+      display.drawTextCentered(display.width()/2, 41, tmp);
+      #else:
       display.drawTextCentered(display.width()/2, 48, tmp);
-      
+      #endif
       return 1000;  // refresh every second
     }
 
@@ -238,8 +245,11 @@ public:
       display.setColor(DisplayDriver::YELLOW);
       display.setTextSize(2);
       sprintf(tmp, "MSG:%d", _task->getMsgCount());
-      display.drawTextCentered(display.width() / 2, 20, tmp);
-
+      #ifdef ST7789
+        display.drawTextCentered(display.width()/2, 26, tmp);
+      #else
+        display.drawTextCentered(display.width() / 2, 20, tmp);
+      #endif
       #ifdef WIFI_SSID
         IPAddress ip = WiFi.localIP();
         snprintf(tmp, sizeof(tmp), "IP: %d.%d.%d.%d", ip[0], ip[1], ip[2], ip[3]);
@@ -423,8 +433,13 @@ public:
     uint32_t current_time = rtc_clock.getCurrentTime() + TIMEZONE_OFFSET;
     DateTime dt(current_time);
     sprintf(tmp, "%02d:%02d", dt.hour(), dt.minute());
+  #ifdef ST7789
+    display.setTextSize(2);
+    display.drawTextCentered(display.width()/2, 26, tmp);
+  #else
     display.setTextSize(4);
     display.drawTextCentered(display.width()/2, 21, tmp);
+  #endif
     display.setTextSize(1);
     sprintf(tmp, "%02d.%02d.%04d", dt.day(), dt.month(), dt.year());
     display.drawTextCentered(display.width()/2, 54, tmp);
@@ -457,7 +472,7 @@ public:
       }
       return true;
     }
-    if (c == KEY_ENTER && _page == HomePage::RADIO) {
+    if (c == KEY_ENTER && display.isOn() && _page == HomePage::RADIO) {
       if (_task->isSerialEnabled()) {  // toggle Bluetooth on/off
         _task->disableSerial();
         _task->showAlert("Bluetooth OFF", 1000);
@@ -467,7 +482,7 @@ public:
       }
       return true;
     }
-    if (c == KEY_ENTER && _page == HomePage::RECENT) {
+    if (c == KEY_ENTER && display.isOn() && _page == HomePage::RECENT) {
       _task->notify(UIEventType::ack);
       if (the_mesh.advert()) {
         _task->showAlert("Advert sent!", 1000);
@@ -477,20 +492,20 @@ public:
       return true;
     }
 #if ENV_INCLUDE_GPS == 1
-    if (c == KEY_ENTER && _page == HomePage::GPS) {
+    if (c == KEY_ENTER && display.isOn() && _page == HomePage::GPS) {
       _task->toggleGPS();
       return true;
     }
 #endif
 #if UI_SENSORS_PAGE == 1
-    if (c == KEY_ENTER && _page == HomePage::SENSORS) {
+    if (c == KEY_ENTER && display.isOn() && _page == HomePage::SENSORS) {
       _task->toggleGPS();
       next_sensors_refresh=0;
       return true;
     }
 #endif
 
-    if (c == KEY_ENTER && _page == HomePage::TIME) {
+    if (c == KEY_ENTER && display.isOn() && _page == HomePage::TIME) {
       _task->toggleScreensaver();
       return true;
     }
@@ -845,6 +860,8 @@ void UITask::loop() {
     c = handleDoubleClick(KEY_PREV);
   } else if (ev == BUTTON_EVENT_TRIPLE_CLICK) {
     c = handleTripleClick(KEY_SELECT);
+  } else if (ev == BUTTON_EVENT_QUADRUPLE_CLICK) {
+    c = handleQuadrupleClick(KEY_SELECT);
   }
 #endif
 #if defined(PIN_USER_BTN_ANA)
@@ -908,7 +925,7 @@ void UITask::loop() {
       _display->endFrame();
     }
 #if AUTO_OFF_MILLIS > 0
-    if (millis() > _auto_off) {
+    if (millis() > _auto_off && !_forceBacklight) {
       if (screensaver_on && curr == home) {
         ((HomeScreen*)home)->activateScreensaver();
         _next_refresh = 0;
@@ -987,6 +1004,14 @@ char UITask::handleTripleClick(char c) {
   return c;
 }
 
+char UITask::handleQuadrupleClick(char c) {
+  MESH_DEBUG_PRINTLN("UITask: quadruple click triggered");
+  checkDisplayOn(c);
+  toggleBacklight();
+  c = 0;
+  return c;
+}
+
 bool UITask::getGPSState() {
   if (_sensors != NULL) {
     int num = _sensors->getNumSettings();
@@ -1007,6 +1032,12 @@ void UITask::toggleScreensaver() {
   _next_refresh = 0;
 }
 
+void UITask::toggleBacklight() {
+    _forceBacklight = !_forceBacklight;
+    showAlert(_forceBacklight ? "Backlight: ALWAYS" : "Backlight: BUTTON ", 1000);
+    _auto_off = millis() + AUTO_OFF_MILLIS;
+    _next_refresh = 0;
+}
 
 void UITask::setGPSHardwareState(bool enabled) {
   if (enabled) {
@@ -1084,6 +1115,8 @@ void UITask::toggleBuzzer() {
     the_mesh.savePrefs();
     showAlert(buzzer.isQuiet() ? "Buzzer: OFF" : "Buzzer: ON", 800);
     _next_refresh = 0;  // trigger refresh
+  #else
+    showAlert("Buzzer N/A", 1000);
   #endif
 }
 

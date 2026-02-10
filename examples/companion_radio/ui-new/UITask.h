@@ -50,6 +50,7 @@ private:
   unsigned long next_batt_chck;
   unsigned long _button_press_start;
   
+  
 #ifdef PIN_USER_BTN_ANA
   unsigned long _analogue_pin_read_millis;
 #endif
@@ -63,6 +64,7 @@ private:
   bool screensaver_on;
   bool _hibernation_pending;
   bool _button_was_pressed;
+  bool _forceBacklight = false;
 
 #ifdef PIN_STATUS_LED
   int led_state;
@@ -80,6 +82,7 @@ private:
   char handleLongPress(char c);
   char handleDoubleClick(char c);
   char handleTripleClick(char c);
+  char handleQuadrupleClick(char c);
 
 public:
   UITask(mesh::MainBoard* board, BaseSerialInterface* serial) 
@@ -96,6 +99,7 @@ public:
     , _alert_expiry(0)
     , ui_started_at(0)
     , next_batt_chck(0)
+    , _forceBacklight(0)
     , _button_press_start(0)
 #ifdef PIN_USER_BTN_ANA
     , _analogue_pin_read_millis(0)
@@ -131,6 +135,7 @@ public:
   void toggleBuzzer();
   void toggleGPS();
   void toggleScreensaver();
+  void toggleBacklight();
 
   // from AbstractUITask
   void msgRead(int msgcount) override;
