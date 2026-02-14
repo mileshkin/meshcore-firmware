@@ -30,4 +30,5 @@ struct NodePrefs {  // persisted to file
   uint8_t autoadd_config;    // bitmask for auto-add contacts config
   uint8_t screensaver_enabled;
   uint8_t screensaver_dimmed;
+  uint8_t client_repeat;
 };
