@@ -130,6 +130,14 @@ public:
   bool getGPSState();
   bool isScreensaverEnabled() const { return screensaver_on; }
 
+  bool isBuzzerQuiet() { 
+    #ifdef PIN_BUZZER
+      return buzzer.isQuiet();
+    #else
+      return true;
+    #endif
+  }
+
   // User actions
   void handleHibernation();
   void toggleBuzzer();

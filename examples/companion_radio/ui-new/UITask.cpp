@@ -136,6 +136,14 @@ class HomeScreen : public UIScreen {
     // fill the battery based on the percentage
     int fillWidth = (batteryPercentage * (iconWidth - 2)) / 100;
     display.fillRect(iconX + 1, iconY + 1, fillWidth, iconHeight - 2);
+
+    // show muted icon if buzzer is muted
+#ifdef PIN_BUZZER
+    if (_task->isBuzzerQuiet()) {
+      display.setColor(DisplayDriver::RED);
+      display.drawXbm(iconX - 9, iconY + 1, muted_icon, 8, 8);
+    }
+#endif
   }
 
   CayenneLPP sensors_lpp;

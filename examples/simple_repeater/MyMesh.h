@@ -69,14 +69,14 @@ struct NeighbourInfo {
 };
 
 #ifndef FIRMWARE_BUILD_DATE
-  #define FIRMWARE_BUILD_DATE   "10 Feb 2026"
+  #define FIRMWARE_BUILD_DATE   "15 Feb 2026"
 #endif
 
 #ifndef FIRMWARE_VERSION
   #ifdef HELTEC_LORA_V4
-    #define FIRMWARE_VERSION   "v1.12.0.10-RU-RXFIX"
+    #define FIRMWARE_VERSION   "v1.13.0.0-RU-RXFIX"
   #else
-    #define FIRMWARE_VERSION   "v1.12.0.10-RU"
+    #define FIRMWARE_VERSION   "v1.13.0.0-RU"
   #endif
 #endif
 
