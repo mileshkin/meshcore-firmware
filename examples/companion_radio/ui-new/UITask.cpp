@@ -144,6 +144,19 @@ class HomeScreen : public UIScreen {
       display.drawXbm(iconX - 9, iconY + 1, muted_icon, 8, 8);
     }
 #endif
+
+    // battery percent and voltage readings in DEBUG 
+    #ifdef BATTERY_DEBUG
+      char tmp[80];
+      if (!show_volt) sprintf(tmp, "%d%%", batteryPercentage);
+      else sprintf(tmp, "%.2f", batteryMilliVolts/1000.0f);
+      #ifdef ST7789
+        display.drawTextCentered(114, 7, tmp);
+      #else
+        display.drawTextCentered(115, 9, tmp);
+      #endif
+
+    #endif
   }
 
   CayenneLPP sensors_lpp;
@@ -176,6 +189,7 @@ class HomeScreen : public UIScreen {
 public:
   uint8_t _page;
   uint8_t _page_before_screensaver = HomePage::FIRST;
+  bool show_volt = false;
   
   void activateScreensaver() {
     if (_page != HomePage::SCREENSAVER) {
@@ -456,6 +470,11 @@ public:
   }
 
   bool handleInput(char c) override {
+   
+    if (c == KEY_ENTER && display.isOn() && _page == HomePage::FIRST) {
+      show_volt = !show_volt;
+      return true;
+    }
 
     if (_page == HomePage::SCREENSAVER) {
       if (c == KEY_ENTER) {

@@ -65,6 +65,7 @@ private:
   bool _hibernation_pending;
   bool _button_was_pressed;
   bool _forceBacklight = false;
+  bool show_volt = false;
 
 #ifdef PIN_STATUS_LED
   int led_state;
@@ -109,6 +110,7 @@ public:
     , screensaver_on(false)
     , _hibernation_pending(false)
     , _button_was_pressed(false)
+    , show_volt(false)
 #ifdef PIN_STATUS_LED
     , led_state(0)
     , next_led_change(0)
