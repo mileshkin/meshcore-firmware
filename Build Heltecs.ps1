@@ -1,6 +1,6 @@
 #Build
 $project = "D:\MESHCORE\FIRMWARE\meshcore-firmware"
-$envs = "Heltec_v3_companion_radio_ble","Heltec_v3_repeater","heltec_v4_companion_radio_ble","heltec_v4_repeater","Heltec_t114_companion_radio_ble" #"Heltec_v3_companion_radio_wifi","heltec_v4_companion_radio_wifi"
+$envs = "Heltec_v3_companion_radio_ble","Heltec_v3_repeater","heltec_v4_companion_radio_ble","heltec_v4_repeater","Heltec_t114_companion_radio_ble","Heltec_t114_without_display_companion_radio_ble","Tbeam_SX1276_companion_radio_ble","Tbeam_SX1276_repeater"
 
 foreach ($e in $envs) {
     Write-Host "=== Building $e ==="

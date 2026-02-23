@@ -1,48 +1,46 @@
 #!/usr/bin/python3
 
-# Adds PlatformIO post-processing to merge all the ESP flash images into a single image.
-
 import os
 
 Import("env", "projenv")
 
 board_config = env.BoardConfig()
-firmware_bin = "${BUILD_DIR}/${PROGNAME}.bin"
-merged_bin = os.environ.get("MERGED_BIN_PATH", "${BUILD_DIR}/${PROGNAME}-merged.bin")
-
+merged_bin = os.path.join("$BUILD_DIR", "${PROGNAME}-merged.bin")
 
 def merge_bin_action(source, target, env):
-    flash_images = [
-        *env.Flatten(env.get("FLASH_EXTRA_IMAGES", [])),
-        "$ESP32_APP_OFFSET",
-        source[0].get_abspath(),
+    # Получаем путь к esptool
+    esptool_path = env.get("OBJCOPY", "esptool.py")
+    
+    # Собираем список образов для прошивки
+    flash_images = env.Flatten(env.get("FLASH_EXTRA_IMAGES", []))
+    
+    # Добавляем основной firmware
+    app_offset = env.get("ESP32_APP_OFFSET", "0x10000")
+    flash_images.extend([app_offset, target[0].get_abspath()])
+    
+    # Команда для объединения
+    merge_cmd = [
+        "$PYTHONEXE",
+        esptool_path,
+        "--chip", board_config.get("build.mcu", "esp32"),
+        "merge_bin",
+        "-o", env.subst(merged_bin),
+        "--flash_mode", board_config.get("build.flash_mode", "dio"),
+        "--flash_freq", env.subst("${__get_board_f_flash(__env__)}"),
+        "--flash_size", board_config.get("upload.flash_size", "4MB"),
     ]
-    merge_cmd = " ".join(
-        [
-            '"$PYTHONEXE"',
-            '"$OBJCOPY"',
-            "--chip",
-            board_config.get("build.mcu", "esp32"),
-            "merge_bin",
-            "-o",
-            merged_bin,
-            "--flash_mode",
-            board_config.get("build.flash_mode", "dio"),
-            "--flash_freq",
-            "${__get_board_f_flash(__env__)}",
-            "--flash_size",
-            board_config.get("upload.flash_size", "4MB"),
-            *flash_images,
-        ]
-    )
-    env.Execute(merge_cmd)
+    
+    # Добавляем образы
+    for item in flash_images:
+        merge_cmd.append(env.subst(str(item)))
+    
+    print("Merging firmware images...")
+    result = env.Execute(" ".join(['"%s"' % arg if ' ' in str(arg) else str(arg) for arg in merge_cmd]))
+    
+    if result == 0:
+        print(f"Merged binary created: {env.subst(merged_bin)}")
+    
+    return result
 
-
-env.AddCustomTarget(
-    name="mergebin",
-    dependencies=firmware_bin,
-    actions=merge_bin_action,
-    title="Merge binary",
-    description="Build combined image",
-    always_build=True,
-)
+# Добавляем действие после сборки firmware
+env.AddPostAction("$BUILD_DIR/${PROGNAME}.bin", merge_bin_action)
