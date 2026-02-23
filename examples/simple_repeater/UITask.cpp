@@ -11,7 +11,7 @@
 #define AUTO_OFF_MILLIS      15000  // 15 seconds
 
 #ifdef HELTEC_LORA_V4
-  #define BOOT_SCREEN_MILLIS   8000   // 8 seconds
+  #define BOOT_SCREEN_MILLIS   7000   // 7 seconds
 #else
   #define BOOT_SCREEN_MILLIS   4000   // 4 seconds
 #endif

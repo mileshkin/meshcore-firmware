@@ -8,15 +8,11 @@
 #define FIRMWARE_VER_CODE 9
 
 #ifndef FIRMWARE_BUILD_DATE
-#define FIRMWARE_BUILD_DATE "15 Feb 2026"
+  #define FIRMWARE_BUILD_DATE "23 Feb 2026"
 #endif
 
 #ifndef FIRMWARE_VERSION
-  #ifdef HELTEC_LORA_V4
-    #define FIRMWARE_VERSION   "v1.13.0.0-RU-RXFIX"
-  #else
-    #define FIRMWARE_VERSION   "v1.13.0.0-RU"
-  #endif
+  #define FIRMWARE_VERSION "v1.13.0.0-RU"
 #endif
 
 #if defined(NRF52_PLATFORM) || defined(STM32_PLATFORM)
