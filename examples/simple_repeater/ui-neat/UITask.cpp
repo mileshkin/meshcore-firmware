@@ -1,5 +1,5 @@
 #include "UITask.h"
-#include "MyMesh.h"
+#include "../MyMesh.h"
 #include <Arduino.h>
 #include <helpers/CommonCLI.h>
 #include "icons.h"
