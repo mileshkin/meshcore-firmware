@@ -31,4 +31,5 @@ struct NodePrefs {  // persisted to file
   uint8_t screensaver_enabled;
   uint8_t screensaver_dimmed;
   uint8_t client_repeat;
+  uint8_t path_hash_mode;    // which path mode to use when sending
 };
