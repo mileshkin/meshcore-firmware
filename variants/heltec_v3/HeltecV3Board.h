@@ -11,7 +11,9 @@
 #ifndef PIN_ADC_CTRL              // set in platformio.ini for Heltec Wireless Tracker (2)
   #define  PIN_ADC_CTRL    37
 #endif
-#define  ADC_MULTIPLIER         5.25   // Voltage divider factor for battery voltage measurement
+#ifndef ADC_MULTIPLIER
+  #define  ADC_MULTIPLIER         5.25   // Voltage divider factor for battery voltage measurement
+#endif
 #define  ADC_VREF_VOLTS         3.3    // ADC reference voltage
 #define  PIN_ADC_CTRL_ACTIVE    LOW
 #define  PIN_ADC_CTRL_INACTIVE  HIGH
