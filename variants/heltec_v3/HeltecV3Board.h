@@ -12,7 +12,7 @@
   #define  PIN_ADC_CTRL    37
 #endif
 #ifndef ADC_MULTIPLIER
-  #define  ADC_MULTIPLIER         5.25   // Voltage divider factor for battery voltage measurement
+  #define  ADC_MULTIPLIER       5.42   // Voltage divider factor for battery voltage measurement
 #endif
 #define  ADC_VREF_VOLTS         3.3    // ADC reference voltage
 #define  PIN_ADC_CTRL_ACTIVE    LOW
