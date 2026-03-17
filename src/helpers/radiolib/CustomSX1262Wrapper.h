@@ -4,6 +4,10 @@
 #include "RadioLibWrappers.h"
 #include "SX126xReset.h"
 
+#ifndef USE_SX1262
+#define USE_SX1262
+#endif
+
 #ifndef RSSI_OFFSET
   #define RSSI_OFFSET 0  // LNA GAIN COMPENSATION OFFSET FOR HELTEC V4 OR ANY BOARD WITH EXTERNAL LNA
 #endif
@@ -29,4 +33,11 @@ public:
   }
 
   void doResetAGC() override { sx126xResetAGC((SX126x *)_radio); }
+
+  void setRxBoostedGainMode(bool en) override {
+    ((CustomSX1262 *)_radio)->setRxBoostedGainMode(en);
+  }
+  bool getRxBoostedGainMode() const override {
+    return ((CustomSX1262 *)_radio)->getRxBoostedGainMode();
+  }
 };

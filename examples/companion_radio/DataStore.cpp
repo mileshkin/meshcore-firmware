@@ -230,8 +230,9 @@ void DataStore::loadPrefsInt(const char *filename, NodePrefs& _prefs, double& no
     file.read((uint8_t *)&_prefs.gps_interval, sizeof(_prefs.gps_interval));               // 86
     file.read((uint8_t *)&_prefs.autoadd_config, sizeof(_prefs.autoadd_config));           // 87
     file.read((uint8_t *)&_prefs.autoadd_max_hops, sizeof(_prefs.autoadd_max_hops));       // 88
-    file.read((uint8_t *)&_prefs.screensaver_enabled, sizeof(_prefs.screensaver_enabled)); // 89
-    file.read((uint8_t *)&_prefs.screensaver_dimmed, sizeof(_prefs.screensaver_dimmed));   // 90
+    file.read((uint8_t *)&_prefs.rx_boosted_gain, sizeof(_prefs.rx_boosted_gain)); // 89
+    file.read((uint8_t *)&_prefs.screensaver_enabled, sizeof(_prefs.screensaver_enabled)); // 90
+    file.read((uint8_t *)&_prefs.screensaver_dimmed, sizeof(_prefs.screensaver_dimmed));   // 91
     file.close();
   }
 }
@@ -267,9 +268,10 @@ void DataStore::savePrefs(const NodePrefs& _prefs, double node_lat, double node_
     file.write((uint8_t *)&_prefs.gps_enabled, sizeof(_prefs.gps_enabled));                 // 85
     file.write((uint8_t *)&_prefs.gps_interval, sizeof(_prefs.gps_interval));               // 86
     file.write((uint8_t *)&_prefs.autoadd_config, sizeof(_prefs.autoadd_config));           // 87
-    file.write((uint8_t *)&_prefs.autoadd_max_hops, sizeof(_prefs.autoadd_max_hops));      // 88
-    file.write((uint8_t *)&_prefs.screensaver_enabled, sizeof(_prefs.screensaver_enabled)); // 89
-    file.write((uint8_t *)&_prefs.screensaver_dimmed, sizeof(_prefs.screensaver_dimmed));   // 90
+    file.write((uint8_t *)&_prefs.autoadd_max_hops, sizeof(_prefs.autoadd_max_hops));       // 88
+    file.write((uint8_t *)&_prefs.rx_boosted_gain, sizeof(_prefs.rx_boosted_gain)); // 89
+    file.write((uint8_t *)&_prefs.screensaver_enabled, sizeof(_prefs.screensaver_enabled)); // 90
+    file.write((uint8_t *)&_prefs.screensaver_dimmed, sizeof(_prefs.screensaver_dimmed));   // 91
     file.close();
   }
 }
