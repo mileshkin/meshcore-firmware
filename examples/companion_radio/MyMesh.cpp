@@ -914,11 +914,19 @@ struct FreqRange {
   uint32_t lower_freq, upper_freq;
 };
 
-static FreqRange repeat_freq_ranges[] = {
-  { 433000, 433000 },
-  { 869000, 869000 },
-  { 918000, 918000 }
-};
+#ifdef REPEATER_MODE_HACK
+  static FreqRange repeat_freq_ranges[] = {
+    { 433000, 433000 },
+    { 866000, 870000 },
+    { 918000, 918000 }
+  };
+#else
+  static FreqRange repeat_freq_ranges[] = {
+    { 433000, 433000 },
+    { 869000, 869000 },
+    { 918000, 918000 }
+  };
+#endif
 
 bool MyMesh::isValidClientRepeatFreq(uint32_t f) const {
   for (int i = 0; i < sizeof(repeat_freq_ranges)/sizeof(repeat_freq_ranges[0]); i++) {

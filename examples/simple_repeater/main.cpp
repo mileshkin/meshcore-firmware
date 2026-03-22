@@ -4,7 +4,7 @@
 #include "MyMesh.h"
 
 #ifdef DISPLAY_CLASS
-  #include "UITask.h"
+  #include "ui-neat\UITask.h"
   static UITask ui_task(display);
 #endif
 

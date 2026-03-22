@@ -4,7 +4,7 @@
 #include <helpers/RefCountedDigitalPin.h>
 #include <helpers/ESP32Board.h>
 #include <driver/rtc_io.h>
-
+#include "LoRaFEMControl.h"
 #ifndef ADC_MULTIPLIER
   #define  ADC_MULTIPLIER         5.42   // Voltage divider factor for battery voltage measurement
 #endif
@@ -14,7 +14,7 @@ class HeltecV4Board : public ESP32Board {
 
 public:
   RefCountedDigitalPin periph_power;
-
+  LoRaFEMControl loRaFEMControl;
   HeltecV4Board() : periph_power(PIN_VEXT_EN,PIN_VEXT_EN_ACTIVE) { }
 
   void begin();
