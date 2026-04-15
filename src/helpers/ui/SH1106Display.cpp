@@ -1,6 +1,9 @@
 #include "SH1106Display.h"
 #include <Adafruit_GrayOLED.h>
 #include "Adafruit_SH110X.h"
+#ifdef OLED_RU
+  #include "glcdfont6x8.h"
+#endif
 
 bool SH1106Display::i2c_probe(TwoWire &wire, uint8_t addr)
 {
@@ -36,14 +39,32 @@ void SH1106Display::startFrame(Color bkg)
 {
   display.clearDisplay(); // TODO: apply 'bkg'
   _color = SH110X_WHITE;
+#ifdef OLED_RU
+  display.setFont(&glcdfont6x8);
+#endif
   display.setTextColor(_color);
   display.setTextSize(1);
   display.cp437(true); // Use full 256 char 'Code Page 437' font
+#ifdef OLED_RU
+  display.setCursor(0, 7);
+#endif
 }
 
 void SH1106Display::setTextSize(int sz)
 {
   display.setTextSize(sz);
+#ifdef OLED_RU
+  _size = sz;
+#endif
+}
+
+void SH1106Display::setContrast(int contrast) {
+  display.oled_command(SH110X_SETCONTRAST);
+  display.oled_command(contrast);
+}
+
+bool SH1106Display::dim(bool dimmed) {
+  return true;
 }
 
 void SH1106Display::setColor(Color c)
@@ -54,7 +75,11 @@ void SH1106Display::setColor(Color c)
 
 void SH1106Display::setCursor(int x, int y)
 {
+#ifdef OLED_RU
+  display.setCursor(x, y + (_size * 7));
+#else
   display.setCursor(x, y);
+#endif
 }
 
 void SH1106Display::print(const char *str)

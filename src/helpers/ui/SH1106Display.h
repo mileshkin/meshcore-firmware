@@ -19,6 +19,9 @@ class SH1106Display : public DisplayDriver
   Adafruit_SH1106G display;
   bool _isOn;
   uint8_t _color;
+#ifdef OLED_RU
+  uint8_t _size;
+#endif
 
   bool i2c_probe(TwoWire &wire, uint8_t addr);
 
@@ -32,6 +35,8 @@ public:
   void clear() override;
   void startFrame(Color bkg = DARK) override;
   void setTextSize(int sz) override;
+  void setContrast(int contrast) override;
+  bool dim(bool dimmed) override;
   void setColor(Color c) override;
   void setCursor(int x, int y) override;
   void print(const char *str) override;

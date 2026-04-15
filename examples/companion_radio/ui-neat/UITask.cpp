@@ -834,7 +834,9 @@ void UITask::shutdown(bool restart){
 }
 
 bool UITask::isButtonPressed() const {
-#ifdef PIN_USER_BTN
+#if UI_HAS_JOYSTICK
+  return back_btn.isPressed();
+#elif defined(PIN_USER_BTN)
   return user_btn.isPressed();
 #else
   return false;
@@ -854,31 +856,42 @@ void UITask::loop() {
       return;
   }
   char c = 0;
-  #if UI_HAS_JOYSTICK
-  int ev = user_btn.check();
+  #if UI_HAS_JOYSTICK                // if we have a joystick
+
+  int ev = user_btn.check();         // joystick center button events
   if (ev == BUTTON_EVENT_CLICK) {
-    c = checkDisplayOn(KEY_ENTER);
+    c = checkDisplayOn(KEY_SELECT);  // wake screen on joystick click
   } else if (ev == BUTTON_EVENT_LONG_PRESS) {
-    c = handleLongPress(KEY_ENTER);  // REVISIT: could be mapped to different key code
+    c = handleLongPress(KEY_ENTER);
+  } else if (ev == BUTTON_EVENT_TRIPLE_CLICK) {
+    c = handleTripleClick(KEY_SELECT);
   }
-  ev = joystick_left.check();
+  
+  ev = joystick_left.check();         // joystick left button events
   if (ev == BUTTON_EVENT_CLICK) {
     c = checkDisplayOn(KEY_LEFT);
   } else if (ev == BUTTON_EVENT_LONG_PRESS) {
     c = handleLongPress(KEY_LEFT);
   }
-  ev = joystick_right.check();
+  
+  ev = joystick_right.check();         // joystick right button events
   if (ev == BUTTON_EVENT_CLICK) {
     c = checkDisplayOn(KEY_RIGHT);
   } else if (ev == BUTTON_EVENT_LONG_PRESS) {
     c = handleLongPress(KEY_RIGHT);
   }
-  ev = back_btn.check();
-  if (ev == BUTTON_EVENT_TRIPLE_CLICK) {
+  
+  ev = back_btn.check();               // back button events
+  if (ev == BUTTON_EVENT_CLICK) {
+    c = checkDisplayOn(KEY_SELECT);    // wake screen on back button click
+  } else if (ev == BUTTON_EVENT_TRIPLE_CLICK) {
     c = handleTripleClick(KEY_SELECT);
+  } else if (ev == BUTTON_EVENT_QUADRUPLE_CLICK) {
+    c = handleQuadrupleClick(KEY_SELECT);
   }
-#elif defined(PIN_USER_BTN)
-  int ev = user_btn.check();
+
+#elif defined(PIN_USER_BTN)            // else if we have a single user button
+  int ev = user_btn.check();           // check for user button events
   if (ev == BUTTON_EVENT_CLICK) {
     c = checkDisplayOn(KEY_NEXT);
   } else if (ev == BUTTON_EVENT_LONG_PRESS) {

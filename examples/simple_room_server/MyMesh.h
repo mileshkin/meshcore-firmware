@@ -26,7 +26,7 @@
 /* ------------------------------ Config -------------------------------- */
 
 #ifndef FIRMWARE_BUILD_DATE
-  #define FIRMWARE_BUILD_DATE   "13 Apr 2026"
+  #define FIRMWARE_BUILD_DATE   "15 Apr 2026"
 #endif
 
 #ifndef FIRMWARE_VERSION
