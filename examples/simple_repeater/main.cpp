@@ -2,6 +2,9 @@
 #include <Mesh.h>
 
 #include "MyMesh.h"
+#ifdef ESP32
+  #include "NTPSync.h"
+#endif
 
 #ifdef DISPLAY_CLASS
   #include "ui-neat/UITask.h"
@@ -149,6 +152,9 @@ void loop() {
 
   the_mesh.loop();
   sensors.loop();
+#ifdef ESP32
+  NTPSync::sync(the_mesh.getNodePrefs(), &rtc_clock);
+#endif
 #ifdef DISPLAY_CLASS
   ui_task.loop();
 #endif
