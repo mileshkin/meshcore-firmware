@@ -60,6 +60,11 @@ struct NodePrefs { // persisted to file
   uint8_t rx_boosted_gain; // power settings
   uint8_t path_hash_mode;   // which path mode to use when sending
   uint8_t loop_detect;
+  // WiFi settings
+  char wifi_ssid[32];      // WiFi SSID
+  char wifi_password[64];  // WiFi password
+  char connection_type[10]; // "AP" or "STA"
+  uint8_t wifi_power_save; // WiFi power save mode: 0=min, 1=none, 2=max (default: 0=min)
 };
 
 class CommonCLICallbacks {

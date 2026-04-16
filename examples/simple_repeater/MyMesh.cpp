@@ -887,6 +887,11 @@ MyMesh::MyMesh(mesh::MainBoard &board, mesh::Radio &radio, mesh::MillisecondCloc
   _prefs.gps_interval = 0;
   _prefs.advert_loc_policy = ADVERT_LOC_PREFS;
 
+  // WiFi defaults
+  StrHelper::strncpy(_prefs.wifi_ssid, "ssid_here", sizeof(_prefs.wifi_ssid));
+  StrHelper::strncpy(_prefs.wifi_password, "password_here", sizeof(_prefs.wifi_password));
+  StrHelper::strncpy(_prefs.connection_type, "AP", sizeof(_prefs.connection_type));
+
   _prefs.adc_multiplier = 0.0f; // 0.0f means use default board multiplier
 
 #if defined(USE_SX1262) || defined(USE_SX1268)

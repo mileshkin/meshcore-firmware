@@ -4,6 +4,11 @@
 #include "AdvertDataHelpers.h"
 #include <RTClib.h>
 
+#ifdef ESP_PLATFORM
+  #include <WiFi.h>
+  #include <esp_wifi.h>
+#endif
+
 #ifndef BRIDGE_MAX_BAUD
 #define BRIDGE_MAX_BAUD 115200
 #endif
@@ -88,8 +93,10 @@ void CommonCLI::loadPrefsInt(FILESYSTEM* fs, const char* filename) {
     file.read((uint8_t *)&_prefs->adc_multiplier, sizeof(_prefs->adc_multiplier));                 // 166
     file.read((uint8_t *)_prefs->owner_info, sizeof(_prefs->owner_info));                          // 170
     file.read((uint8_t *)&_prefs->rx_boosted_gain, sizeof(_prefs->rx_boosted_gain));              // 290
-    // next: 291
-
+    file.read((uint8_t *)&_prefs->wifi_ssid, sizeof(_prefs->wifi_ssid));                          // 291
+    file.read((uint8_t *)&_prefs->wifi_password, sizeof(_prefs->wifi_password));                  // 292
+    file.read((uint8_t *)&_prefs->connection_type, sizeof(_prefs->connection_type));              // 293
+    // next is 294;
     // sanitise bad pref values
     _prefs->rx_delay_base = constrain(_prefs->rx_delay_base, 0, 20.0f);
     _prefs->tx_delay_factor = constrain(_prefs->tx_delay_factor, 0, 2.0f);
@@ -179,7 +186,10 @@ void CommonCLI::savePrefs(FILESYSTEM* fs) {
     file.write((uint8_t *)&_prefs->adc_multiplier, sizeof(_prefs->adc_multiplier));                 // 166
     file.write((uint8_t *)_prefs->owner_info, sizeof(_prefs->owner_info));                          // 170
     file.write((uint8_t *)&_prefs->rx_boosted_gain, sizeof(_prefs->rx_boosted_gain));              // 290
-    // next: 291
+    file.write((uint8_t *)&_prefs->wifi_ssid, sizeof(_prefs->wifi_ssid));                          // 291
+    file.write((uint8_t *)&_prefs->wifi_password, sizeof(_prefs->wifi_password));                  // 292
+    file.write((uint8_t *)&_prefs->connection_type, sizeof(_prefs->connection_type));              // 293
+    // next: 294
 
     file.close();
   }
@@ -235,9 +245,15 @@ void CommonCLI::handleCommand(uint32_t sender_timestamp, const char* command, ch
         strcpy(reply, "ERR: clock cannot go backwards");
       }
     } else if (memcmp(command, "start ota", 9) == 0) {
-      if (!_board->startOTAUpdate(_prefs->node_name, reply)) {
-        strcpy(reply, "Error");
-      }
+      #ifdef ESP_PLATFORM
+        if (!_board->startOTAUpdate(_prefs->node_name, _prefs->wifi_ssid, _prefs->wifi_password, _prefs->connection_type, reply)) {
+          strcpy(reply, "Error");
+        }
+      #else
+        if (!_board->startOTAUpdate(_prefs->node_name, reply)) {
+          strcpy(reply, "Error");
+        }
+      #endif
     } else if (memcmp(command, "clock", 5) == 0) {
       uint32_t now = getRTCClock()->getCurrentTime();
       DateTime dt = DateTime(now);
@@ -299,7 +315,34 @@ void CommonCLI::handleCommand(uint32_t sender_timestamp, const char* command, ch
         int dc_int = (int)dc;
         int dc_frac = (int)((dc - dc_int) * 10.0f + 0.5f);
         sprintf(reply, "> %d.%d%%", dc_int, dc_frac);
-      } else if (memcmp(config, "af", 2) == 0) {
+      } else if (memcmp(config, "wifi.ssid", 9) == 0) {
+        sprintf(reply, "> %s", _prefs->wifi_ssid);
+      } else if (memcmp(config, "wifi.pwd", 8) == 0) {
+        sprintf(reply, "> %s", _prefs->wifi_password);
+      } else if (memcmp(config, "wifi.mode", 9) == 0) {
+        sprintf(reply, "> %s", _prefs->connection_type);
+      } 
+      #ifdef ESP_PLATFORM
+      else if (memcmp(config, "wifi.status", 11) == 0) {
+        wl_status_t status = WiFi.status();
+        const char* status_str;
+        switch(status) {
+          case WL_CONNECTED: status_str = "connected"; break;
+          case WL_NO_SSID_AVAIL: status_str = "no_ssid"; break;
+          case WL_CONNECT_FAILED: status_str = "connect_failed"; break;
+          case WL_CONNECTION_LOST: status_str = "connection_lost"; break;
+          case WL_DISCONNECTED: status_str = "disconnected"; break;
+          default: status_str = "unknown"; break;
+        }
+        if (status == WL_CONNECTED) {
+          sprintf(reply, "> %s, IP: %s, RSSI: %d dBm", status_str, WiFi.localIP().toString().c_str(), WiFi.RSSI());
+
+        } else {
+          sprintf(reply, "> %s (code: %d)", status_str, status);
+        }
+      } 
+      #endif
+      else if (memcmp(config, "af", 2) == 0) {
         sprintf(reply, "> %s", StrHelper::ftoa(_prefs->airtime_factor));
       } else if (memcmp(config, "int.thresh", 10) == 0) {
         sprintf(reply, "> %d", (uint32_t) _prefs->interference_threshold);
@@ -468,6 +511,18 @@ void CommonCLI::handleCommand(uint32_t sender_timestamp, const char* command, ch
           int a_frac = (int)((actual - a_int) * 10.0f + 0.5f);
           sprintf(reply, "OK - %d.%d%%", a_int, a_frac);
         }
+      } else if (memcmp(config, "wifi.ssid ", 10) == 0) {
+        StrHelper::strncpy(_prefs->wifi_ssid, &config[10], sizeof(_prefs->wifi_ssid));
+        savePrefs();
+        strcpy(reply, "OK");
+      } else if (memcmp(config, "wifi.pwd ", 9) == 0) {
+        StrHelper::strncpy(_prefs->wifi_password, &config[9], sizeof(_prefs->wifi_password));
+        savePrefs();
+        strcpy(reply, "OK");
+      } else if (memcmp(config, "wifi.mode ", 10) == 0) {
+        StrHelper::strncpy(_prefs->connection_type, &config[10], sizeof(_prefs->connection_type));
+        savePrefs();
+        strcpy(reply, "OK");
       } else if (memcmp(config, "af ", 3) == 0) {
         _prefs->airtime_factor = atof(&config[3]);
         savePrefs();

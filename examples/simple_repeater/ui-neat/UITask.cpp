@@ -4,7 +4,7 @@
 #include <helpers/CommonCLI.h>
 #include "icons.h"
 #include <MeshCore.h>
-#ifdef WITH_MQTT_BRIDGE
+#ifdef ESP_PLATFORM
   #include <WiFi.h>
 #endif
 
@@ -26,6 +26,7 @@ int batteryPercentage = 0;
 uint32_t _next_batt_read = 0;
 uint32_t _next_display_switch = 0;  // Timer for switching display
 bool _show_ip = false;  // Flag to alternate between node name and IP
+bool _is_observer = false; // Flag to indicate if the node is an observer (WiFi)
 
 const int minMilliVolts = 3300; // Minimum voltage (e.g., 3.3V)
 const int maxMilliVolts = 4200; // Maximum voltage (e.g., 4.2V)
@@ -156,8 +157,9 @@ void UITask::renderCurrScreen() {
 
     // node type
     _display->setTextSize(1);
-    _display->drawTextCentered(_display->width()/2, 24, "< Repeater >");
-    
+    if(_is_observer) {_display->drawTextCentered(_display->width()/2, 24, "< Observer >");} 
+                else {_display->drawTextCentered(_display->width()/2, 24, "< Repeater >");}
+
     // version info
     _display->setTextSize(2);
     _display->setColor(DisplayDriver::LIGHT);
@@ -181,28 +183,37 @@ void UITask::renderCurrScreen() {
     _display->drawXbm(1, 13, horizontal_line, 126, 1);
     _display->setColor(DisplayDriver::GREEN);
 
-              #ifdef WITH_MQTT_BRIDGE
-              // Check if it's time to switch display
-              if (millis() >= _next_display_switch) {
-              _show_ip = !_show_ip;  // Toggle between node name and IP
-              _next_display_switch = millis() + DISPLAY_SWITCH_MILLIS;
-              }
-              if (_show_ip && WiFi.status() == WL_CONNECTED) {
-              // Display IP address
-              IPAddress ip = WiFi.localIP();
-              snprintf(tmp, sizeof(tmp), "IP:%d.%d.%d.%d", ip[0], ip[1], ip[2], ip[3]);
-              _display->drawTextCentered(_display->width()/2, 17, tmp);
-              } else if (_show_ip && WiFi.status() != WL_CONNECTED) {
-              // Display WiFi disconnected message
-              _display->drawTextCentered(_display->width()/2, 17, "WiFi Disconnected");
-              } else {
-              // Display node name
-              _display->drawTextCentered(_display->width()/2, 17, _node_prefs->node_name);
-              }
-              #else
-              // If MQTT bridge is not enabled, always show node name
-              _display->drawTextCentered(_display->width()/2, 17, _node_prefs->node_name);
-              #endif
+    #ifdef ESP_PLATFORM
+        // Check if it's time to switch display
+        if (millis() >= _next_display_switch) {
+            _show_ip = !_show_ip;  // Toggle between node name and IP
+            _next_display_switch = millis() + DISPLAY_SWITCH_MILLIS;
+        }
+
+        if (_is_observer) {
+            // Observer: always show connection status
+            if (WiFi.status() == WL_CONNECTED) {
+                IPAddress ip = WiFi.localIP();
+                snprintf(tmp, sizeof(tmp), "IP:%d.%d.%d.%d", ip[0], ip[1], ip[2], ip[3]);
+                _display->drawTextCentered(_display->width()/2, 17, tmp);
+            } else {
+                _display->drawTextCentered(_display->width()/2, 17, "WiFi Disconnected");
+            }
+        } else {
+            // Non-observer: toggle between node name and connection status
+            if (_show_ip && WiFi.status() == WL_CONNECTED) {
+                IPAddress ip = WiFi.localIP();
+                snprintf(tmp, sizeof(tmp), "IP:%d.%d.%d.%d", ip[0], ip[1], ip[2], ip[3]);
+                _display->drawTextCentered(_display->width()/2, 17, tmp);
+            } else if (_show_ip && WiFi.status() == WL_CONNECT_FAILED) {
+                _display->drawTextCentered(_display->width()/2, 17, "WiFi Disconnected");
+            } else {
+                _display->drawTextCentered(_display->width()/2, 17, _node_prefs->node_name);
+            }
+        }
+        #else
+        _display->drawTextCentered(_display->width()/2, 17, _node_prefs->node_name);
+        #endif
               
     _display->drawXbm(1, 27, horizontal_line, 126, 1);
 

@@ -57,8 +57,13 @@ public:
   virtual void setGpio(uint32_t values) {}
   virtual uint8_t getStartupReason() const = 0;
   virtual bool getBootloaderVersion(char* version, size_t max_len) { return false; }
-  virtual bool startOTAUpdate(const char* id, char reply[]) { return false; }   // not supported
-
+  
+  #ifdef ESP_PLATFORM
+    virtual bool startOTAUpdate(const char* id, const char* wifi_ssid, const char* wifi_password, const char* connection_type, char reply[]) { return false; }
+  #else
+    virtual bool startOTAUpdate(const char* id, char reply[]) { return false; }
+  #endif
+  
   // Power management interface (boards with power management override these)
   virtual bool isExternalPowered() { return false; }
   virtual uint16_t getBootVoltage() { return 0; }

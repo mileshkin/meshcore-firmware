@@ -125,7 +125,7 @@ public:
     esp_restart();
   }
 
-  bool startOTAUpdate(const char* id, char reply[]) override;
+  bool startOTAUpdate(const char* id, const char* wifi_ssid, const char* wifi_password, const char* connection_type, char reply[]) override;
 
   void setInhibitSleep(bool inhibit) {
     inhibit_sleep = inhibit;
