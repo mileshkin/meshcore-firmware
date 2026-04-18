@@ -492,6 +492,18 @@ void CommonCLI::handleSetCmd(uint32_t sender_timestamp, char* command, char* rep
       int a_frac = (int)((actual - a_int) * 10.0f + 0.5f);
       sprintf(reply, "OK - %d.%d%%", a_int, a_frac);
     }
+  } else if (memcmp(config, "wifi.ssid ", 10) == 0) {
+    StrHelper::strncpy(_prefs->wifi_ssid, &config[10], sizeof(_prefs->wifi_ssid));
+    savePrefs();
+    strcpy(reply, "OK");
+  } else if (memcmp(config, "wifi.pwd ", 9) == 0) {
+    StrHelper::strncpy(_prefs->wifi_password, &config[9], sizeof(_prefs->wifi_password));
+    savePrefs();
+    strcpy(reply, "OK");
+  } else if (memcmp(config, "wifi.mode ", 10) == 0) {
+    StrHelper::strncpy(_prefs->connection_type, &config[10], sizeof(_prefs->connection_type));
+    savePrefs();
+    strcpy(reply, "OK");
   } else if (memcmp(config, "af ", 3) == 0) {
     _prefs->airtime_factor = atof(&config[3]);
     savePrefs();
@@ -753,7 +765,34 @@ void CommonCLI::handleGetCmd(uint32_t sender_timestamp, char* command, char* rep
     int dc_int = (int)dc;
     int dc_frac = (int)((dc - dc_int) * 10.0f + 0.5f);
     sprintf(reply, "> %d.%d%%", dc_int, dc_frac);
-  } else if (memcmp(config, "af", 2) == 0) {
+  } else if (memcmp(config, "wifi.ssid", 9) == 0) {
+    sprintf(reply, "> %s", _prefs->wifi_ssid);
+  } else if (memcmp(config, "wifi.pwd", 8) == 0) {
+    sprintf(reply, "> %s", _prefs->wifi_password);
+  } else if (memcmp(config, "wifi.mode", 9) == 0) {
+    sprintf(reply, "> %s", _prefs->connection_type);
+  } 
+  #ifdef ESP_PLATFORM
+  else if (memcmp(config, "wifi.status", 11) == 0) {
+    wl_status_t status = WiFi.status();
+    const char* status_str;
+    switch(status) {
+      case WL_CONNECTED: status_str = "connected"; break;
+      case WL_NO_SSID_AVAIL: status_str = "no_ssid"; break;
+      case WL_CONNECT_FAILED: status_str = "connect_failed"; break;
+      case WL_CONNECTION_LOST: status_str = "connection_lost"; break;
+      case WL_DISCONNECTED: status_str = "disconnected"; break;
+      default: status_str = "unknown"; break;
+    }
+    if (status == WL_CONNECTED) {
+      sprintf(reply, "> %s, IP: %s, RSSI: %d dBm", status_str, WiFi.localIP().toString().c_str(), WiFi.RSSI());
+
+    } else {
+      sprintf(reply, "> %s (code: %d)", status_str, status);
+    }
+  } 
+  #endif
+  else if (memcmp(config, "af", 2) == 0) {
     sprintf(reply, "> %s", StrHelper::ftoa(_prefs->airtime_factor));
   } else if (memcmp(config, "int.thresh", 10) == 0) {
     sprintf(reply, "> %d", (uint32_t) _prefs->interference_threshold);
