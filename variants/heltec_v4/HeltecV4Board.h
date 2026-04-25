@@ -8,9 +8,12 @@
 #ifndef ADC_MULTIPLIER
   #define  ADC_MULTIPLIER         5.42   // Voltage divider factor for battery voltage measurement
 #endif
-#define  ADC_VREF_VOLTS         3.3    // ADC reference voltage
+#define  ADC_VREF_VOLTS           3.3    // ADC reference voltage
 
 class HeltecV4Board : public ESP32Board {
+
+protected:
+  float adc_mult = ADC_MULTIPLIER;
 
 public:
   RefCountedDigitalPin periph_power;
@@ -24,7 +27,6 @@ public:
   void powerOff() override;
   uint16_t getBattMilliVolts() override;
   const char* getManufacturerName() const override ;
-  float adc_mult = ADC_MULTIPLIER;
   
   bool setAdcMultiplier(float multiplier) override {
     if (multiplier == 0.0f) {

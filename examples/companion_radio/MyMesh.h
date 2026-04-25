@@ -8,14 +8,14 @@
 #define FIRMWARE_VER_CODE 11
 
 #ifndef FIRMWARE_BUILD_DATE
-#define FIRMWARE_BUILD_DATE "16 Apr 2026"
+  #define FIRMWARE_BUILD_DATE "25 Apr 2026"
 #endif
 
 #ifndef FIRMWARE_VERSION
   #ifdef REPEATER_MODE_HACK
-    #define FIRMWARE_VERSION "v1.14.4.0-RH"
+    #define FIRMWARE_VERSION "v1.15.1.0-RH"
   #else
-    #define FIRMWARE_VERSION "v1.14.4.0-RU"
+    #define FIRMWARE_VERSION "v1.15.1.0-RU"
   #endif
 #endif
 

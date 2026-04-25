@@ -97,7 +97,8 @@ void CommonCLI::loadPrefsInt(FILESYSTEM* fs, const char* filename) {
     file.read((uint8_t *)&_prefs->wifi_ssid, sizeof(_prefs->wifi_ssid));                          // 291
     file.read((uint8_t *)&_prefs->wifi_password, sizeof(_prefs->wifi_password));                  // 292
     file.read((uint8_t *)&_prefs->connection_type, sizeof(_prefs->connection_type));              // 293
-    // next is 294;
+    file.read((uint8_t *)&_prefs->ntp_interval, sizeof(_prefs->ntp_interval));                    // 294
+    // next is 295;
     // sanitise bad pref values
     _prefs->rx_delay_base = constrain(_prefs->rx_delay_base, 0, 20.0f);
     _prefs->tx_delay_factor = constrain(_prefs->tx_delay_factor, 0, 2.0f);
@@ -111,6 +112,7 @@ void CommonCLI::loadPrefsInt(FILESYSTEM* fs, const char* filename) {
     _prefs->multi_acks = constrain(_prefs->multi_acks, 0, 1);
     _prefs->adc_multiplier = constrain(_prefs->adc_multiplier, 0.0f, 10.0f);
     _prefs->path_hash_mode = constrain(_prefs->path_hash_mode, 0, 2);   // NOTE: mode 3 reserved for future
+    _prefs->ntp_interval = constrain(_prefs->ntp_interval, 0, 168);     // 0 if for off and 1 hour to 7 days
 
     // sanitise bad bridge pref values
     _prefs->bridge_enabled = constrain(_prefs->bridge_enabled, 0, 1);
@@ -190,8 +192,8 @@ void CommonCLI::savePrefs(FILESYSTEM* fs) {
     file.write((uint8_t *)&_prefs->wifi_ssid, sizeof(_prefs->wifi_ssid));                          // 291
     file.write((uint8_t *)&_prefs->wifi_password, sizeof(_prefs->wifi_password));                  // 292
     file.write((uint8_t *)&_prefs->connection_type, sizeof(_prefs->connection_type));              // 293
-    // next: 294
-
+    file.write((uint8_t *)&_prefs->ntp_interval, sizeof(_prefs->ntp_interval));                    // 294
+    // next: 295
     file.close();
   }
 }
@@ -506,6 +508,19 @@ void CommonCLI::handleSetCmd(uint32_t sender_timestamp, char* command, char* rep
     StrHelper::strncpy(_prefs->connection_type, &config[10], sizeof(_prefs->connection_type));
     savePrefs();
     strcpy(reply, "OK");
+  } else if (memcmp(config, "ntp.interval ", 13) == 0) {
+    _prefs->ntp_interval = atoi(&config[13]);
+    _prefs->ntp_interval = constrain(_prefs->ntp_interval, 0, 168);
+    savePrefs();
+    if (_prefs->ntp_interval == 0) {
+      strcpy(reply, "Time sync via NTP disabled");
+    } else {
+      if (_prefs->ntp_interval == 1) {
+        sprintf(reply, "Time sync enabled. Interval: %d hour", _prefs->ntp_interval);
+      } else {
+        sprintf(reply, "Time sync enabled. Interval: %d hours", _prefs->ntp_interval);
+      }
+    }
   } else if (memcmp(config, "af ", 3) == 0) {
     _prefs->airtime_factor = atof(&config[3]);
     savePrefs();
@@ -774,7 +789,15 @@ void CommonCLI::handleGetCmd(uint32_t sender_timestamp, char* command, char* rep
     sprintf(reply, "> %s", _prefs->wifi_password);
   } else if (memcmp(config, "wifi.mode", 9) == 0) {
     sprintf(reply, "> %s", _prefs->connection_type);
-  } 
+  } else if (memcmp(config, "ntp.interval", 12) == 0) {
+    if (_prefs->ntp_interval == 0) {
+      strcpy(reply, "> Time sync via NTP disabled");
+    } else if (_prefs->ntp_interval == 1) {
+      sprintf(reply, "> %d hour", _prefs->ntp_interval);
+    } else {
+      sprintf(reply, "> %d hours", _prefs->ntp_interval);
+    }
+  }
   #ifdef ESP_PLATFORM
   else if (memcmp(config, "wifi.status", 11) == 0) {
     wl_status_t status = WiFi.status();

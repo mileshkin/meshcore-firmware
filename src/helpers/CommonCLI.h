@@ -66,6 +66,8 @@ struct NodePrefs { // persisted to file
   char wifi_password[64];  // WiFi password
   char connection_type[10]; // "AP" or "STA"
   uint8_t wifi_power_save; // WiFi power save mode: 0=min, 1=none, 2=max (default: 0=min)
+  // NTP settings
+  uint8_t ntp_interval;    // hours between syncs
 };
 
 class CommonCLICallbacks {

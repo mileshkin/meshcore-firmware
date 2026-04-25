@@ -6,6 +6,20 @@ foreach ($e in $envs) {
     Write-Host "=== Building $e ==="
     C:\Users\MILESHKIN\.platformio\penv\Scripts\platformio.exe run -d $project -e $e
 }
+
+#Build Repeater-Hack / Battery Debug version for companions
+$project = "D:\MESHCORE\FIRMWARE\meshcore-firmware"
+$envs = "heltec_v4_companion_radio_ble","Heltec_t114_companion_radio_ble"
+
+$env:PLATFORMIO_BUILD_FLAGS = "-D BATTERY_DEBUG -D REPEATER_MODE_HACK"
+
+foreach ($e in $envs) {
+    Write-Host "=== Building $e ==="
+    C:\Users\MILESHKIN\.platformio\penv\Scripts\platformio.exe run -d $project -e $e
+}
+
+Remove-Item Env:PLATFORMIO_BUILD_FLAGS
+
 #Clean
 $project = "D:\MESHCORE\FIRMWARE\meshcore-firmware"
 $envs = "Heltec_v3_companion_radio_ble","Heltec_v3_repeater","heltec_v4_companion_radio_ble","heltec_v4_repeater"

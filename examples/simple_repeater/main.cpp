@@ -153,7 +153,9 @@ void loop() {
   the_mesh.loop();
   sensors.loop();
 #ifdef ESP32
+  if (the_mesh.getNodePrefs()->ntp_interval > 0) {
   NTPSync::sync(the_mesh.getNodePrefs(), &rtc_clock);
+  }
 #endif
 #ifdef DISPLAY_CLASS
   ui_task.loop();

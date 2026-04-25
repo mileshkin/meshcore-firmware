@@ -21,12 +21,14 @@
 #include <driver/rtc_io.h>
 
 class HeltecV3Board : public ESP32Board {
+protected:
+  float adc_mult = ADC_MULTIPLIER;
+
 private:
   bool adc_active_state;
 
 public:
   RefCountedDigitalPin periph_power;
-  float adc_mult = ADC_MULTIPLIER;
 
   HeltecV3Board() : periph_power(PIN_VEXT_EN) { }
 
@@ -109,7 +111,7 @@ public:
 
     digitalWrite(PIN_ADC_CTRL, !adc_active_state);
 
-    return (ADC_MULTIPLIER * (ADC_VREF_VOLTS / 1024.0) * raw) * 1000;
+    return (adc_mult * (ADC_VREF_VOLTS / 1024.0) * raw) * 1000;
   }
 
   const char* getManufacturerName() const override {

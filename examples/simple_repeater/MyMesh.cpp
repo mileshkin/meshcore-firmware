@@ -883,8 +883,8 @@ MyMesh::MyMesh(mesh::MainBoard &board, mesh::Radio &radio, mesh::MillisecondCloc
   _prefs.bw = LORA_BW;
   _prefs.cr = LORA_CR;
   _prefs.tx_power_dbm = LORA_TX_POWER;
-  _prefs.advert_interval = 1;        // default to 2 minutes for NEW installs
-  _prefs.flood_advert_interval = 12; // 12 hours
+  _prefs.advert_interval = 30;        // default to 60 minutes for NEW installs
+  _prefs.flood_advert_interval = 3; // 3 hours
   _prefs.flood_max = 64;
   _prefs.interference_threshold = 0; // disabled
 
@@ -907,6 +907,10 @@ MyMesh::MyMesh(mesh::MainBoard &board, mesh::Radio &radio, mesh::MillisecondCloc
   StrHelper::strncpy(_prefs.wifi_password, "password_here", sizeof(_prefs.wifi_password));
   StrHelper::strncpy(_prefs.connection_type, "AP", sizeof(_prefs.connection_type));
 
+  // NTP switches and intervals
+  _prefs.ntp_interval = 0; // hours - disabled by default
+
+  // ADC defaults
   _prefs.adc_multiplier = 0.0f; // 0.0f means use default board multiplier
 
 #if defined(USE_SX1262) || defined(USE_SX1268)

@@ -12,12 +12,12 @@
 
 class T114Board : public NRF52BoardDCDC {
 protected:
+float adc_mult = ADC_MULTIPLIER;
 #ifdef NRF52_POWER_MANAGEMENT
   void initiateShutdown(uint8_t reason) override;
 #endif
 
 public:
-  float adc_mult = ADC_MULTIPLIER;
   T114Board() : NRF52Board("T114_OTA") {}
   void begin();
 
@@ -57,7 +57,7 @@ public:
     adcvalue = analogRead(PIN_VBAT_READ);
     digitalWrite(6, 0);
 
-    return (uint16_t)((float)adcvalue * MV_LSB * ADC_MULTIPLIER);
+    return (uint16_t)((float)adcvalue * MV_LSB * adc_mult);
   }
 
   const char* getManufacturerName() const override {
