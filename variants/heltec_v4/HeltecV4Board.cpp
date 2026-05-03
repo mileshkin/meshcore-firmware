@@ -83,3 +83,7 @@ void HeltecV4Board::begin() {
     return loRaFEMControl.getFEMType() == KCT8103L_PA ? "Heltec V4.3 OLED" : "Heltec V4 OLED";
 #endif
   }
+  
+  int HeltecV4Board::getRSSIOffset() const {
+    return loRaFEMControl.getFEMType() == KCT8103L_PA ? -21 : -17;
+  }

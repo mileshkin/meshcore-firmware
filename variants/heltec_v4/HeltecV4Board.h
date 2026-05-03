@@ -27,6 +27,7 @@ public:
   void powerOff() override;
   uint16_t getBattMilliVolts() override;
   const char* getManufacturerName() const override ;
+  int getRSSIOffset() const override;
   
   bool setAdcMultiplier(float multiplier) override {
     if (multiplier == 0.0f) {
