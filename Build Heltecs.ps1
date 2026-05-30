@@ -9,7 +9,7 @@ foreach ($e in $envs) {
 
 #Build Repeater-Hack / Battery Debug version for companions
 $project = "D:\MESHCORE\FIRMWARE\meshcore-firmware"
-$envs = "heltec_v4_companion_radio_ble","Heltec_t114_companion_radio_ble"
+$envs = "heltec_v4_companion_radio_ble","heltec_v4_companion_radio_wifi","Heltec_t114_companion_radio_ble"
 
 $env:PLATFORMIO_BUILD_FLAGS = "-D BATTERY_DEBUG -D REPEATER_MODE_HACK"
 

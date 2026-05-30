@@ -995,7 +995,7 @@ struct FreqRange {
   ALLOWED_REPEAT_FREQ_RANGE
   #else
   { 433000, 433000 },
-  { 869000, 869000 },
+  { 869495, 869495 },
   { 918000, 918000 }
   #endif
   };
