@@ -35,8 +35,6 @@ jobs:
           - RAK_4631_companion_radio_ble
           - RAK_4631_repeater
           - RAK_4631_room_server
-          # STM32
-          - wio-e5-mini_repeater
           # ESP32-C6
           - LilyGo_Tlora_C6_repeater_
           # LR1110 (nRF52)
