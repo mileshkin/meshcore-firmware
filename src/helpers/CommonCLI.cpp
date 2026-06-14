@@ -100,7 +100,8 @@ void CommonCLI::loadPrefsInt(FILESYSTEM* fs, const char* filename) {
     file.read((uint8_t *)&_prefs->ntp_interval, sizeof(_prefs->ntp_interval));                    // 294
     file.read((uint8_t *)&_prefs->flood_max_unscoped, sizeof(_prefs->flood_max_unscoped));        // 295
     file.read((uint8_t *)&_prefs->flood_max_advert, sizeof(_prefs->flood_max_advert));            // 296
-    // next: 297
+    file.read((uint8_t *)&_prefs->radio_fem_rxgain, sizeof(_prefs->radio_fem_rxgain));            // 297
+    // next: 298
 
     // sanitise bad pref values
     _prefs->rx_delay_base = constrain(_prefs->rx_delay_base, 0, 20.0f);
@@ -131,6 +132,7 @@ void CommonCLI::loadPrefsInt(FILESYSTEM* fs, const char* filename) {
 
     // sanitise settings
     _prefs->rx_boosted_gain = constrain(_prefs->rx_boosted_gain, 0, 1); // boolean
+    _prefs->radio_fem_rxgain = constrain(_prefs->radio_fem_rxgain, 0, 1); // boolean
 
     file.close();
   }
@@ -198,7 +200,8 @@ void CommonCLI::savePrefs(FILESYSTEM* fs) {
     file.write((uint8_t *)&_prefs->ntp_interval, sizeof(_prefs->ntp_interval));                    // 294
     file.write((uint8_t *)&_prefs->flood_max_unscoped, sizeof(_prefs->flood_max_unscoped));        // 295
     file.write((uint8_t *)&_prefs->flood_max_advert, sizeof(_prefs->flood_max_advert));            // 296
-    // next: 297
+    file.write((uint8_t *)&_prefs->radio_fem_rxgain, sizeof(_prefs->radio_fem_rxgain));            // 297
+    // next: 298
     file.close();
   }
 }
@@ -612,6 +615,28 @@ void CommonCLI::handleSetCmd(uint32_t sender_timestamp, char* command, char* rep
     savePrefs();
     _callbacks->setRxBoostedGain(_prefs->rx_boosted_gain);
 #endif
+  } else if (memcmp(config, "radio.fem.rxgain ", 17) == 0) {
+    if (!_board->canControlLoRaFemLna()) {
+      strcpy(reply, "Error: unsupported");
+    } else if (memcmp(&config[17], "on", 2) == 0) {
+      if (_board->setLoRaFemLnaEnabled(true)) {
+        _prefs->radio_fem_rxgain = 1;
+        savePrefs();
+        strcpy(reply, "OK - LoRa FEM RX gain on");
+      } else {
+        strcpy(reply, "Error: failed to apply LoRa FEM RX gain");
+      }
+    } else if (memcmp(&config[17], "off", 3) == 0) {
+      if (_board->setLoRaFemLnaEnabled(false)) {
+        _prefs->radio_fem_rxgain = 0;
+        savePrefs();
+        strcpy(reply, "OK - LoRa FEM RX gain off");
+      } else {
+        strcpy(reply, "Error: failed to apply LoRa FEM RX gain");
+      }
+    } else {
+      strcpy(reply, "Error: state must be on or off");
+    }
   } else if (memcmp(config, "radio ", 6) == 0) {
     strcpy(tmp, &config[6]);
     const char *parts[4];
@@ -801,7 +826,7 @@ void CommonCLI::handleSetCmd(uint32_t sender_timestamp, char* command, char* rep
       }
     } else {
       _prefs->adc_multiplier = 0.0f;
-      strcpy(reply, "Error: unsupported by this board");
+      strcpy(reply, "Error: unsupported");
     };
   } else {
     strcpy(reply, "unknown config: ");
@@ -884,6 +909,12 @@ void CommonCLI::handleGetCmd(uint32_t sender_timestamp, char* command, char* rep
   } else if (memcmp(config, "radio.rxgain", 12) == 0) {
     sprintf(reply, "> %s", _prefs->rx_boosted_gain ? "on" : "off");
 #endif
+  } else if (memcmp(config, "radio.fem.rxgain", 16) == 0) {
+    if (!_board->canControlLoRaFemLna()) {
+      strcpy(reply, "Error: unsupported");
+    } else {
+      sprintf(reply, "> %s", _board->isLoRaFemLnaEnabled() ? "on" : "off");
+    }
   } else if (memcmp(config, "radio", 5) == 0) {
     char freq[16], bw[16];
     strcpy(freq, StrHelper::ftoa(_prefs->freq));
@@ -969,12 +1000,12 @@ void CommonCLI::handleGetCmd(uint32_t sender_timestamp, char* command, char* rep
           strcpy(reply, "> unknown");
       }
   #else
-      strcpy(reply, "ERROR: unsupported");
+      strcpy(reply, "Error: unsupported");
   #endif
   } else if (memcmp(config, "adc.multiplier", 14) == 0) {
     float adc_mult = _board->getAdcMultiplier();
     if (adc_mult == 0.0f) {
-      strcpy(reply, "Error: unsupported by this board");
+      strcpy(reply, "Error: unsupported");
     } else {
       sprintf(reply, "> %.3f", adc_mult);
     }
