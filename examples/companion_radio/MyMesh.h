@@ -8,7 +8,7 @@
 #define FIRMWARE_VER_CODE 13
 
 #ifndef FIRMWARE_BUILD_DATE
-#define FIRMWARE_BUILD_DATE "14 Jun 2026"
+#define FIRMWARE_BUILD_DATE "21 Jun 2026"
 #endif
 
 #ifndef FIRMWARE_VERSION
@@ -109,6 +109,7 @@ public:
 protected:
   float getAirtimeBudgetFactor() const override;
   int getInterferenceThreshold() const override;
+  bool getCADEnabled() const override;
   int calcRxDelay(float score, uint32_t air_time) const override;
   uint32_t getRetransmitDelay(const mesh::Packet *packet) override;
   uint32_t getDirectRetransmitDelay(const mesh::Packet *packet) override;

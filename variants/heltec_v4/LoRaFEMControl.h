@@ -25,6 +25,6 @@ class LoRaFEMControl
   private:
     LoRaFEMType fem_type=OTHER_FEM_TYPES;
     bool lna_enabled=true;
-    bool lna_can_control=false;
+    bool lna_can_control=true;
 };
 

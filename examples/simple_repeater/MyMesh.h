@@ -69,7 +69,7 @@ struct NeighbourInfo {
 };
 
 #ifndef FIRMWARE_BUILD_DATE
-  #define FIRMWARE_BUILD_DATE   "14 Jun 2026"
+  #define FIRMWARE_BUILD_DATE   "21 Jun 2026"
 #endif
 
 #ifndef FIRMWARE_VERSION
@@ -149,6 +149,9 @@ protected:
 
   int getInterferenceThreshold() const override {
     return _prefs.interference_threshold;
+  }
+  bool getCADEnabled() const override {
+    return _prefs.cad_enabled;
   }
   int getAGCResetInterval() const override {
     return ((int)_prefs.agc_reset_interval) * 4000;   // milliseconds

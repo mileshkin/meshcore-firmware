@@ -64,6 +64,7 @@ struct NodePrefs { // persisted to file
   uint8_t radio_fem_rxgain; // LoRa FEM RX gain setting
   uint8_t path_hash_mode;   // which path mode to use when sending
   uint8_t loop_detect;
+  uint8_t cad_enabled;      // hardware Channel Activity Detection before TX (boolean)
   // WiFi settings
   char wifi_ssid[32];      // WiFi SSID
   char wifi_password[64];  // WiFi password
