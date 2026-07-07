@@ -27,11 +27,11 @@
 /* ------------------------------ Config -------------------------------- */
 
 #ifndef FIRMWARE_BUILD_DATE
-  #define FIRMWARE_BUILD_DATE   "21 Jun 2026"
+  #define FIRMWARE_BUILD_DATE   "07 Jul 2026"
 #endif
 
 #ifndef FIRMWARE_VERSION
-  #define FIRMWARE_VERSION   "v1.16.1.0-RU"
+  #define FIRMWARE_VERSION   "v1.16.3.0-RU"
 #endif
 
 #ifndef LORA_FREQ
@@ -154,7 +154,7 @@ protected:
     return _prefs.multi_acks;
   }
 
-  bool filterRecvFloodPacket(mesh::Packet* pkt) override;
+  mesh::DispatcherAction onRecvPacket(mesh::Packet* pkt) override;
 
   bool allowPacketForward(const mesh::Packet* packet) override;
   void onAnonDataRecv(mesh::Packet* packet, const uint8_t* secret, const mesh::Identity& sender, uint8_t* data, size_t len) override;
