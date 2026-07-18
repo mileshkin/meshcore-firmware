@@ -117,10 +117,6 @@ void setup() {
   ethernet_start_task();
 #endif
 
-#ifdef ETHERNET_ENABLED
-  ethernet_start_task();
-#endif
-
   // send out initial zero hop Advertisement to the mesh
 #if ENABLE_ADVERT_ON_BOOT == 1
   the_mesh.sendSelfAdvertisement(16000, false);
