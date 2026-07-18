@@ -32,9 +32,7 @@ jobs:
           - heltec_v4_companion_radio_ble
           - heltec_v4_repeater
           # nRF52
-          - RAK_4631_companion_radio_ble
-          - RAK_4631_repeater
-          - RAK_4631_room_server
+          - Heltec_t114_companion_radio_ble
           # ESP32-C6
           - LilyGo_Tlora_C6_repeater_
           # LR1110 (nRF52)

@@ -21,7 +21,7 @@ class UITask {
   void renderCurrScreen();
   void shutdown(bool restart = false);
 public:
-  UITask(DisplayDriver& display) : _display(&display) { _next_read = _next_refresh = 0; }
+  UITask(mesh::MainBoard& board, DisplayDriver& display) : _board(&board), _display(&display) { _next_read = _next_refresh = 0; }
   void begin(NodePrefs* node_prefs, const char* build_date, const char* firmware_version, mesh::RTCClock* rtc, mesh::MainBoard* board);
 
   void loop();
