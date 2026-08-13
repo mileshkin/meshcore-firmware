@@ -112,7 +112,7 @@ void UITask::handleHibernation() {
       if (_display != NULL) {
         _display->startFrame();
         _display->setTextSize(1);
-        _display->setColor(DisplayDriver::YELLOW);
+        _display->setColor(UIColor::warning_txt);
         _display->drawTextCentered(_display->width() / 2, 15, "Release to POWER OFF");
         _display->drawTextCentered(_display->width() / 2, 26, "...");
         _display->drawTextCentered(_display->width() / 2, 40, "or hold to CANCEL");
@@ -152,7 +152,7 @@ void UITask::renderCurrScreen() {
   char tmp[80];
   if (millis() < BOOT_SCREEN_MILLIS) { // boot screen
     // meshcore logo
-    _display->setColor(DisplayDriver::BLUE);
+    _display->setColor(UIColor::corp_blue);
     _display->drawXbm(1, 5, meshcore_logo, 127, 13);
 
     // node type
@@ -162,7 +162,7 @@ void UITask::renderCurrScreen() {
 
     // version info
     _display->setTextSize(2);
-    _display->setColor(DisplayDriver::LIGHT);
+    _display->setColor(UIColor::primary_txt);
     _display->drawTextCentered(_display->width()/2, 36, _version_info);
 
     // build date
@@ -181,7 +181,7 @@ void UITask::renderCurrScreen() {
 
     // node name
     _display->drawXbm(1, 13, horizontal_line, 126, 1);
-    _display->setColor(DisplayDriver::GREEN);
+    _display->setColor(UIColor::popup_txt);
 
     #ifdef ESP_PLATFORM
         // Check if it's time to switch display
@@ -218,7 +218,7 @@ void UITask::renderCurrScreen() {
     _display->drawXbm(1, 27, horizontal_line, 126, 1);
 
     // freq / sf
-    _display->setColor(DisplayDriver::YELLOW);
+    _display->setColor(UIColor::warning_txt);
     sprintf(tmp, "FREQ:%06.3f SF:%d", _node_prefs->freq, _node_prefs->sf);
     _display->drawTextCentered(_display->width()/2, 33, tmp);
 
@@ -241,7 +241,7 @@ void UITask::renderCurrScreen() {
     int iconHeight = 7;
     int iconX = display.width() - iconWidth - 2; // Position the icon near the top-right corner
     int iconY = 3;
-    display.setColor(DisplayDriver::GREEN);
+    display.setColor(UIColor::primary_txt);
 
     // battery outline
     display.drawXbm(iconX, iconY, batt_outline, iconWidth, iconHeight);
@@ -296,7 +296,7 @@ void UITask::loop() {
       if (_display != NULL) {
         _display->startFrame();
         _display->setTextSize(2);
-        _display->setColor(DisplayDriver::RED);
+        _display->setColor(UIColor::warning_txt);
         _display->drawTextCentered(_display->width() / 2, 20, "Low Battery.");
         _display->drawTextCentered(_display->width() / 2, 40, "Shutting Down!");
         _display->endFrame();

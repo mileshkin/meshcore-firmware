@@ -8,14 +8,14 @@
 #define FIRMWARE_VER_CODE 13
 
 #ifndef FIRMWARE_BUILD_DATE
-#define FIRMWARE_BUILD_DATE "17 Jul 2026"
+#define FIRMWARE_BUILD_DATE "13 Aug 2026"
 #endif
 
 #ifndef FIRMWARE_VERSION
   #ifdef REPEATER_MODE_HACK
-    #define FIRMWARE_VERSION "v1.16.4.0-RH"
+    #define FIRMWARE_VERSION "v1.17.0.0-RH"
   #else
-    #define FIRMWARE_VERSION "v1.16.4.0-RU"
+    #define FIRMWARE_VERSION "v1.17.0.0-RU"
   #endif
 #endif
 
@@ -169,7 +169,11 @@ protected:
   }
 
 public:
-  void savePrefs() { _store->savePrefs(_prefs, sensors.node_lat, sensors.node_lon); }
+  void savePrefs() {
+    _prefs.node_lat = sensors.node_lat;
+    _prefs.node_lon = sensors.node_lon;
+    _store->savePrefs(_prefs);
+  }
 
 #if ENV_INCLUDE_GPS == 1
   void applyGpsPrefs() {

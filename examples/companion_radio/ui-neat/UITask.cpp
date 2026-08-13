@@ -57,12 +57,12 @@ public:
 
   int render(DisplayDriver& display) override {
     // meshcore logo
-    display.setColor(DisplayDriver::BLUE);
+    display.setColor(UIColor::corp_blue);
     int logoWidth = 128;
     display.drawXbm((display.width() - logoWidth) / 2, 3, meshcore_logo, logoWidth, 13);
 
     // version info
-    display.setColor(DisplayDriver::LIGHT);
+    display.setColor(UIColor::primary_txt);
     display.setTextSize(2);
     display.drawTextCentered(display.width()/2, 22, _version_info);
 
@@ -128,7 +128,7 @@ class HomeScreen : public UIScreen {
     int iconX = display.width() - iconWidth - 2; // Position the icon near the top-right corner
     int iconY = 0;
     display.setContrast(DISPLAY_CONTRAST);
-    display.setColor(DisplayDriver::GREEN);
+    display.setColor(UIColor::primary_txt);
 
     // battery outline
     display.drawXbm(iconX, iconY, batt_outline, iconWidth, iconHeight);
@@ -140,7 +140,7 @@ class HomeScreen : public UIScreen {
     // show muted icon if buzzer is muted
 #ifdef PIN_BUZZER
     if (_task->isBuzzerQuiet()) {
-      display.setColor(DisplayDriver::RED);
+      display.setColor(UIColor::warning_txt);
       display.drawXbm(iconX - 9, iconY + 1, muted_icon, 8, 8);
     }
 #endif
@@ -213,7 +213,7 @@ public:
     char tmp[80];
 
     if (_page == HomePage::SCREENSAVER) {
-      display.setColor(DisplayDriver::LIGHT);
+      display.setColor(UIColor::primary_txt);
       
       if (_node_prefs->screensaver_dimmed) {
         display.setContrast(SCREENSAVER_CONTRAST);
@@ -243,7 +243,7 @@ public:
 
     // node name
     display.setTextSize(1);
-    display.setColor(DisplayDriver::GREEN);
+    display.setColor(UIColor::primary_txt);
     char filtered_name[sizeof(_node_prefs->node_name)];
     display.translateUTF8ToBlocks(filtered_name, _node_prefs->node_name, sizeof(filtered_name));
     int iconWidth = 24;                       // Must match iconWidth in renderBatteryIndicator
@@ -264,7 +264,7 @@ public:
     }
 
     if (_page == HomePage::FIRST) {
-      display.setColor(DisplayDriver::YELLOW);
+      display.setColor(UIColor::warning_txt);
       display.setTextSize(2);
       sprintf(tmp, "MSG:%d", _task->getMsgCount());
       #ifdef ST7789
@@ -279,12 +279,12 @@ public:
         display.drawTextCentered(display.width() / 2, 54, tmp); 
       #endif
       if (_task->hasConnection()) {
-        display.setColor(DisplayDriver::GREEN);
+        display.setColor(UIColor::primary_txt);
         display.setTextSize(1);
         display.drawTextCentered(display.width() / 2, 43, "< Connected >");
 
       } else if (the_mesh.getBLEPin() != 0) { // BT pin
-        display.setColor(DisplayDriver::RED);
+        display.setColor(UIColor::warning_txt);
         display.setTextSize(2);
         sprintf(tmp, "Pin:%d", the_mesh.getBLEPin());
         display.drawTextCentered(display.width() / 2, 43, tmp);
@@ -292,12 +292,12 @@ public:
     } else if (_page == HomePage::RECENT) {
       the_mesh.getRecentlyHeard(recent, UI_RECENT_LIST_SIZE);
       if(recent[0].name[0] == NULL) {
-        display.setColor(DisplayDriver::RED);
+        display.setColor(UIColor::warning_txt);
         display.setTextSize(1);
         display.drawTextCentered(display.width()/2, 32, "No adverts received");
         return 1000;
       }
-      display.setColor(DisplayDriver::GREEN);
+      display.setColor(UIColor::primary_txt);
       int y = 20;
       for (int i = 0; i < UI_RECENT_LIST_SIZE; i++, y += 11) {
         auto a = &recent[i];
@@ -321,7 +321,7 @@ public:
         display.print(tmp);
       }
     } else if (_page == HomePage::RADIO) {
-      display.setColor(DisplayDriver::YELLOW);
+      display.setColor(UIColor::warning_txt);
       display.setTextSize(1);
       // freq / sf
       display.setCursor(0, 20);
@@ -500,11 +500,11 @@ public:
       return true;
     }
     if (c == KEY_ENTER && display.isOn() && _page == HomePage::RADIO) {
-      if (_task->isSerialEnabled()) {  // toggle Bluetooth on/off
-        _task->disableSerial();
+      if (_task->isBluetoothEnabled()) {  // toggle Bluetooth on/off
+        _task->disableBluetooth();
         _task->showAlert("Bluetooth OFF", 1000);
       } else {
-        _task->enableSerial();
+        _task->enableBluetooth();
         _task->showAlert("Bluetooth ON", 1000);
       }
       return true;
@@ -575,7 +575,7 @@ public:
     char tmp[16];
     display.setCursor(0, 0);
     display.setTextSize(1);
-    display.setColor(DisplayDriver::GREEN);
+    display.setColor(UIColor::primary_txt);
     sprintf(tmp, "Unread: %d", num_unread);
     display.print(tmp);
 
@@ -595,13 +595,13 @@ public:
     display.drawRect(0, 11, display.width(), 1);  // horiz line
 
     display.setCursor(0, 14);
-    display.setColor(DisplayDriver::YELLOW);
+    display.setColor(UIColor::warning_txt);
     char filtered_origin[sizeof(p->origin)];
     display.translateUTF8ToBlocks(filtered_origin, p->origin, sizeof(filtered_origin));
     display.print(filtered_origin);
 
     display.setCursor(0, 25);
-    display.setColor(DisplayDriver::LIGHT);
+    display.setColor(UIColor::primary_txt);
     char filtered_msg[sizeof(p->msg)];
     display.translateUTF8ToBlocks(filtered_msg, p->msg, sizeof(filtered_msg));
     display.printWordWrap(filtered_msg, display.width());
@@ -953,9 +953,9 @@ void UITask::loop() {
         _display->setTextSize(1);
         int y = _display->height() / 3;
         int p = _display->height() / 32;
-        _display->setColor(DisplayDriver::DARK);
+        _display->setColor(UIColor::window_bkg);
         _display->fillRect(p, y, _display->width() - p*2, y);
-        _display->setColor(DisplayDriver::LIGHT);  // draw box border
+        _display->setColor(UIColor::primary_txt);  // draw box border
         _display->drawRect(p, y, _display->width() - p*2, y);
         _display->drawTextCentered(_display->width() / 2, y + p*3, _alert);
         _next_refresh = _alert_expiry;   // will need refresh when alert is dismissed
@@ -991,7 +991,7 @@ void UITask::loop() {
       if (_display != NULL) {
         _display->startFrame();
         _display->setTextSize(2);
-        _display->setColor(DisplayDriver::RED);
+        _display->setColor(UIColor::warning_txt);
         _display->drawTextCentered(_display->width() / 2, 20, "Low Battery.");
         _display->drawTextCentered(_display->width() / 2, 40, "Shutting Down!");
         _display->endFrame();
@@ -1066,7 +1066,7 @@ bool UITask::getGPSState() {
 
 void UITask::toggleScreensaver() {
   screensaver_on = !screensaver_on;
-  _node_prefs->screensaver_enabled = screensaver_on;
+  _node_prefs->screensaver_enabled = !_node_prefs->screensaver_enabled;
   the_mesh.savePrefs();
   showAlert(screensaver_on ? "Screensaver: ON" : "Screensaver: OFF", 1000);
   _next_refresh = 0;
@@ -1198,7 +1198,7 @@ void UITask::handleHibernation() {
             if (_display != NULL) {
                 _display->startFrame();
                 _display->setTextSize(1);
-                _display->setColor(DisplayDriver::YELLOW);
+                _display->setColor(UIColor::warning_txt);
                 _display->drawTextCentered(_display->width() / 2, 15, "Release to POWER OFF");
                 _display->drawTextCentered(_display->width() / 2, 26, "...");
                 _display->drawTextCentered(_display->width() / 2, 40, "or hold to CANCEL");

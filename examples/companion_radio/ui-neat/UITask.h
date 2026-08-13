@@ -4,7 +4,7 @@
 #include <helpers/ui/DisplayDriver.h>
 #include <helpers/ui/UIScreen.h>
 #include <helpers/SensorManager.h>
-#include <helpers/BaseSerialInterface.h>
+#include <helpers/MultiSerialInterface.h>
 #include <Arduino.h>
 #include <helpers/sensors/LPPDataHelpers.h>
 
@@ -86,7 +86,7 @@ private:
   char handleQuadrupleClick(char c);
 
 public:
-  UITask(mesh::MainBoard* board, BaseSerialInterface* serial) 
+  UITask(mesh::MainBoard* board, MultiSerialInterface* serial) 
     : AbstractUITask(board, serial)
     , _display(NULL)
     , _sensors(NULL)
