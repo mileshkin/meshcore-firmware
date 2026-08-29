@@ -85,6 +85,8 @@ public:
   virtual const char* getResetReasonString(uint32_t reason) { return "Not available"; }
   virtual uint8_t getShutdownReason() const { return 0; }
   virtual const char* getShutdownReasonString(uint8_t reason) { return "Not available"; }
+
+  virtual bool handleCommand(const char* command, uint32_t sender_timestamp, char* reply) { return false; }
 };
 
 /**

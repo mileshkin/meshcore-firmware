@@ -10,6 +10,10 @@
 #define  ADC_VREF_VOLTS           3.3    // ADC reference voltage
 
 class HeltecV4Board : public ESP32Board {
+  KeyValueStore* _prefs = NULL;
+
+  bool setLoRaFemLnaEnabled(bool enable);
+  bool isLoRaFemLnaEnabled() const;
 
 protected:
   float adc_mult = ADC_MULTIPLIER;
@@ -20,12 +24,12 @@ public:
   HeltecV4Board() : periph_power(PIN_VEXT_EN,PIN_VEXT_EN_ACTIVE) { }
 
   void begin();
+  void attachDynamicPrefs(KeyValueStore* prefs);
+  bool handleCommand(const char* command, uint32_t sender_timestamp, char* reply) override;
+
   void onBeforeTransmit(void) override;
   void onAfterTransmit(void) override;
   void powerOff() override;
-  bool setLoRaFemLnaEnabled(bool enable) override;
-  bool canControlLoRaFemLna() const override;
-  bool isLoRaFemLnaEnabled() const override;
   uint16_t getBattMilliVolts() override;
   const char* getManufacturerName() const override ;
   int getRSSIOffset() const override;
