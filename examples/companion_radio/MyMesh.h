@@ -2,20 +2,19 @@
 
 #include <Arduino.h>
 #include <Mesh.h>
-#include "AbstractUITask.h"
 
 /*------------ Frame Protocol --------------*/
 #define FIRMWARE_VER_CODE 14
 
 #ifndef FIRMWARE_BUILD_DATE
-#define FIRMWARE_BUILD_DATE "29 Aug 2026"
+#define FIRMWARE_BUILD_DATE "03 Oct 2026"
 #endif
 
 #ifndef FIRMWARE_VERSION
   #ifdef REPEATER_MODE_HACK
-    #define FIRMWARE_VERSION "v1.17.2.0-RH"
+    #define FIRMWARE_VERSION "v1.17.3.0-RH"
   #else
-    #define FIRMWARE_VERSION "v1.17.2.0-RU"
+    #define FIRMWARE_VERSION "v1.17.3.0-RU"
   #endif
 #endif
 
@@ -80,6 +79,10 @@
 #define REQ_TYPE_KEEP_ALIVE             0x02
 #define REQ_TYPE_GET_TELEMETRY_DATA     0x03
 
+// Copied from simple_repeater
+#define CTL_TYPE_NODE_DISCOVER_REQ      0x80
+#define CTL_TYPE_NODE_DISCOVER_RESP     0x90
+
 struct AdvertPath {
   uint8_t pubkey_prefix[7];
   uint8_t path_len;
@@ -90,14 +93,35 @@ struct AdvertPath {
 
 class MyMesh : public BaseChatMesh, public DataStoreHost {
 public:
-  MyMesh(mesh::Radio &radio, mesh::RNG &rng, mesh::RTCClock &rtc, SimpleMeshTables &tables, DataStore& store, AbstractUITask* ui=NULL);
+  class Listener {
+    public:
+      virtual void onMessageRecv(mesh::Packet *pkt, const ContactInfo &from, uint8_t txt_type, uint32_t sender_timestamp, const char* text) = 0;
+      virtual void onChannelMessageRecv(mesh::Packet *pkt, ChannelDetails& channel_details, const char* text) = 0;
+      virtual void onQueueSizeChanged(int msgcount) = 0;
+      virtual void onDiscoveredContact(ContactInfo &contact, bool is_new, uint8_t path_len, const uint8_t* path) { }
+      virtual void onControlDataRecv(const mesh::Packet* pkt) { }
+      virtual void onChannelDataRecv(mesh::Packet *pkt, const mesh::GroupChannel &channel, uint16_t data_type,
+                                     const uint8_t *data, size_t data_len) { }
+      virtual void onACKRecv(uint32_t ack_crc) { }
+      virtual uint8_t onUnhandledRequest(const ContactInfo &contact, uint32_t sender_timestamp, const uint8_t *data,
+                                         uint8_t len, uint8_t *reply) { return 0; /* unknown request type */ }
+      virtual bool onUnhandledResponse(const ContactInfo &from, uint32_t tag, const uint8_t* data, uint8_t len) { return false; /* not handled */ }
+      virtual void onTraceRecv(mesh::Packet *pkt, uint32_t tag, uint32_t auth_code, uint8_t flags,
+                               const uint8_t *path_snrs, const uint8_t *path_hashes, uint8_t path_len) { }
+      virtual void onRawDataRecv(mesh::Packet *pkt) { }
+      virtual ~Listener() { }
+  };
 
-  void begin(bool has_display);
+  MyMesh(mesh::Radio &radio, mesh::RNG &rng, mesh::RTCClock &rtc, SimpleMeshTables &tables, DataStore& store);
+
+  void begin();
   void startInterface(BaseSerialInterface &serial);
+  void setListener(Listener* listener) { _listener = listener; }
 
   const char *getNodeName();
   NodePrefs *getNodePrefs();
   uint32_t getBLEPin();
+  void setBLEPin(uint32_t active_pin);
 
   void loop();
   void handleCmdFrame(size_t len);
@@ -110,6 +134,9 @@ protected:
   float getAirtimeBudgetFactor() const override;
   int getInterferenceThreshold() const override;
   bool getCADEnabled() const override;
+  int getAGCResetInterval() const override {
+    return ((int)_prefs.agc_reset_interval) * 4000;   // milliseconds
+  }
   int calcRxDelay(float score, uint32_t air_time) const override;
   uint32_t getRetransmitDelay(const mesh::Packet *packet) override;
   uint32_t getDirectRetransmitDelay(const mesh::Packet *packet) override;
@@ -223,7 +250,7 @@ private:
   uint32_t pending_telemetry, pending_discovery;   // pending _TELEMETRY_REQ
   uint32_t pending_req;   // pending _BINARY_REQ
   BaseSerialInterface *_serial;
-  AbstractUITask* _ui;
+  Listener* _listener;
 
   ContactsIterator _iter;
   uint32_t _iter_filter_since;
