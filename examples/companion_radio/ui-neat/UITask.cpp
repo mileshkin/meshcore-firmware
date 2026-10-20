@@ -89,6 +89,9 @@ class HomeScreen : public UIScreen {
   enum HomePage {
     FIRST,
     RECENT,
+#if UI_DISCOVER_SCREEN
+    DISCOVERY,
+#endif
     RADIO,
 #if ENV_INCLUDE_GPS == 1
     GPS,
@@ -107,6 +110,13 @@ class HomeScreen : public UIScreen {
   NodePrefs* _node_prefs;
   AdvertPath recent[UI_RECENT_LIST_SIZE];
 
+  #if UI_DISCOVER_SCREEN
+    DiscoveredNode discovered[DISCOVERED_NODES_TABLE_SIZE]; // not circular, latest discovered nodes are not kept
+    uint32_t disc_node_req_tag = 0;
+    uint32_t disc_nodes_count = 0;
+    uint32_t discovery_req_time = 0;
+    bool discovery_disp_names = true; // by default desplay names if available (removes SNR_O)
+  #endif
 
   void renderBatteryIndicator(DisplayDriver& display, uint16_t batteryMilliVolts) {
     // Convert millivolts to percentage
@@ -137,13 +147,16 @@ class HomeScreen : public UIScreen {
     int fillWidth = (batteryPercentage * (iconWidth - 2)) / 100;
     display.fillRect(iconX + 1, iconY + 1, fillWidth, iconHeight - 2);
 
+    //Bluetooth icon
+    if (_task->isBluetoothEnabled()) display.drawXbm(display.width() - iconWidth - 9, 0, BT_icon, 5, 7);
+
     // show muted icon if buzzer is muted
-#ifdef PIN_BUZZER
-    if (_task->isBuzzerQuiet()) {
-      display.setColor(UIColor::warning_txt);
-      display.drawXbm(iconX - 9, iconY + 1, muted_icon, 8, 8);
-    }
-#endif
+    #ifdef PIN_BUZZER
+      if (_task->isBuzzerQuiet()) {
+        display.setColor(UIColor::warning_txt);
+        display.drawXbm(iconX - 9, iconY + 1, muted_icon, 8, 8);
+      }
+    #endif
 
     // battery percent and voltage readings in DEBUG 
     #ifdef BATTERY_DEBUG
@@ -209,6 +222,40 @@ public:
   HomeScreen(UITask* task, mesh::RTCClock* rtc, SensorManager* sensors, NodePrefs* node_prefs)
      : _task(task), _rtc(rtc), _sensors(sensors), _node_prefs(node_prefs), _page(0), sensors_lpp(200) {  }
 
+  #if UI_DISCOVER_SCREEN
+  bool sendDiscoverRequest() {
+    uint8_t cmd_bytes[6];
+    cmd_bytes[0] = CTL_TYPE_NODE_DISCOVER_REQ | 1; // DISCOVER_REQ | prefix only
+    cmd_bytes[1] = 0xFF;     // Repeaters
+    the_mesh.getRNG()->random((uint8_t *) &disc_node_req_tag, 4);  // generate random tag
+    memcpy(&cmd_bytes[2], &disc_node_req_tag, 4);
+    disc_nodes_count = 0;
+    mesh::Packet* req = the_mesh.createControlData(cmd_bytes, sizeof(cmd_bytes));
+    if (req) {
+      the_mesh.sendZeroHop(req);
+      discovery_req_time = millis();
+      return true;
+    }
+    return false;
+  }
+
+  void handleDiscoverResponse(const mesh::Packet* packet) {
+    if (disc_nodes_count < DISCOVERED_NODES_TABLE_SIZE && memcmp(&packet->payload[2], &disc_node_req_tag, 4) == 0) {
+      auto d = &discovered[disc_nodes_count++];
+      memcpy(d->pubkey_prefix, &packet->payload[6], 8);
+      d->type = packet->payload[0] & 0xF;
+      d->snr_out = ((int8_t)packet->payload[1]) / 4.0;
+      d->snr_in = radio_driver.getLastSNR();
+      ContactInfo* c = the_mesh.lookupContactByPubKey(&packet->payload[6], 8);
+      if (c != NULL) {
+        strncpy(d->name, c->name, 32);
+      } else {
+        d->name[0] = 0;
+      }
+    }
+  }
+#endif
+
   int render(DisplayDriver& display) override {
     char tmp[80];
 
@@ -246,8 +293,10 @@ public:
     display.setColor(UIColor::primary_txt);
     char filtered_name[sizeof(_node_prefs->node_name)];
     display.translateUTF8ToBlocks(filtered_name, _node_prefs->node_name, sizeof(filtered_name));
-    int iconWidth = 24;                       // Must match iconWidth in renderBatteryIndicator
-    int max_name_width = display.width() - iconWidth - 4;
+    int batt_iconWidth = 24;                       // Must match iconWidth in renderBatteryIndicator
+    int bt_iconWidth = 5;
+    int icon_interval = 2;                              // Space between icons
+    int max_name_width = display.width() - batt_iconWidth - bt_iconWidth - (icon_interval * 2);
     display.drawTextEllipsized(2, 0, max_name_width, filtered_name);
     // battery voltage
     renderBatteryIndicator(display, _task->getBattMilliVolts());
@@ -272,11 +321,13 @@ public:
       #else
         display.drawTextCentered(display.width() / 2, 20, tmp);
       #endif
-      #ifdef WIFI_SSID
-        IPAddress ip = WiFi.localIP();
-        snprintf(tmp, sizeof(tmp), "IP: %d.%d.%d.%d", ip[0], ip[1], ip[2], ip[3]);
-        display.setTextSize(1);
-        display.drawTextCentered(display.width() / 2, 54, tmp); 
+       #ifdef WIFI_SSID
+        if (_node_prefs->wifi_enabled) {
+          IPAddress ip = WiFi.localIP();
+          snprintf(tmp, sizeof(tmp), "IP: %d.%d.%d.%d", ip[0], ip[1], ip[2], ip[3]);
+          display.setTextSize(1);
+          display.drawTextCentered(display.width() / 2, 54, tmp);
+        }
       #endif
       if (_task->hasConnection()) {
         display.setColor(UIColor::primary_txt);
@@ -284,10 +335,13 @@ public:
         display.drawTextCentered(display.width() / 2, 43, "< Connected >");
 
       } else if (the_mesh.getBLEPin() != 0) { // BT pin
-        display.setColor(UIColor::warning_txt);
-        display.setTextSize(2);
-        sprintf(tmp, "Pin:%d", the_mesh.getBLEPin());
+        if (_task->isBluetoothEnabled()){display.setColor(UIColor::warning_txt);
+          #ifdef WIFI_SSID
+            if(!(_node_prefs->wifi_enabled)) display.setTextSize(2);
+          #endif
+          sprintf(tmp, "Pin:%d", the_mesh.getBLEPin());
         display.drawTextCentered(display.width() / 2, 43, tmp);
+        }
       }
     } else if (_page == HomePage::RECENT) {
       the_mesh.getRecentlyHeard(recent, UI_RECENT_LIST_SIZE);
@@ -320,6 +374,43 @@ public:
         display.setCursor(display.width() - timestamp_width - 1, y);
         display.print(tmp);
       }
+
+    #if UI_DISCOVER_SCREEN
+     } else if (_page == HomePage::DISCOVERY) {
+      int count = disc_nodes_count; 
+      display.setColor(UIColor::primary_txt);
+      int y = 20;
+      for (int i = 0; i < count; i++, y += 11) {
+        char name[32];
+        auto a = &discovered[i];
+        if ((a->name[0] == 0) || !discovery_disp_names) {
+          mesh::Utils::toHex(name, a->pubkey_prefix, 4);
+        } else {
+          strncpy(name, a->name, 32);
+        }
+        char filtered_name[sizeof(name)];
+        char snr_s[12];
+        if (strlen(name) <= 8) { // display snr_o
+          sprintf(snr_s, "%02.1f>%02.1f", a->snr_out, a->snr_in);
+        } else {
+          sprintf(snr_s, "%02.1f", a->snr_in);
+        }
+        int snr_width = display.getTextWidth(snr_s);
+        int max_name_width = display.width() - snr_width - 1;
+        display.translateUTF8ToBlocks(filtered_name, name, sizeof(filtered_name));
+        display.drawTextEllipsized(0, y, max_name_width, filtered_name);
+        display.setCursor(display.width() - snr_width - 1, y);
+        display.print(snr_s);
+      }
+      if (millis() < discovery_req_time + 5000) {
+        return 1000; // more frequent updates just after req
+      } else if (count == 0) { // show only 5 sec after last disc
+        display.setColor(UIColor::warning_txt);
+        display.setTextSize(1);
+        display.drawTextCentered(display.width()/2, 32, "No reps discovered");
+      }
+    #endif
+
     } else if (_page == HomePage::RADIO) {
       display.setColor(UIColor::warning_txt);
       display.setTextSize(1);
@@ -497,6 +588,11 @@ public:
       if (_page == HomePage::RECENT) {
         _task->showAlert("Send: long press", 1000);
       }
+#if UI_DISCOVER_SCREEN
+      if (_page == HomePage::DISCOVERY) {
+        _task->showAlert("Discover: long press", 1000);
+      }
+#endif
       return true;
     }
     if (c == KEY_ENTER && display.isOn() && _page == HomePage::RADIO) {
@@ -518,6 +614,19 @@ public:
       }
       return true;
     }
+    #if UI_DISCOVER_SCREEN
+        if (c == KEY_ENTER && display.isOn() && _page == HomePage::DISCOVERY) {
+          if (millis() > discovery_req_time + 5000) { // rate limiter
+            sendDiscoverRequest();
+          }
+          if (sendDiscoverRequest()) {
+            _task->showAlert("Discovering reps...", 3000);
+          } else {
+            _task->showAlert("Discovery failed", 2000);
+          }
+          return true;
+        }
+    #endif
 #if ENV_INCLUDE_GPS == 1
     if (c == KEY_ENTER && display.isOn() && _page == HomePage::GPS) {
       _task->toggleGPS();
@@ -753,6 +862,20 @@ void UITask::onQueueSizeChanged(int msgcount) {
   if (msgcount == 0) {
     gotoHomeScreen();
   }
+}
+
+void UITask::onDiscoveredContact(ContactInfo &contact, bool is_new, uint8_t path_len, const uint8_t* path) {
+  if (!hasConnection()) {
+    notify(UIEventType::newContactMessage);
+  }
+}
+
+void UITask::onControlDataRecv(const mesh::Packet* packet) {
+#if UI_DISCOVER_SCREEN
+  if (packet->payload_len >= 14 && (packet->payload[0] & 0xF0) == CTL_TYPE_NODE_DISCOVER_RESP) {
+    ((HomeScreen *) home)->handleDiscoverResponse(packet);
+  }
+#endif
 }
 
 void UITask::onMessageRecv(mesh::Packet *pkt, const ContactInfo &from, uint8_t txt_type,
